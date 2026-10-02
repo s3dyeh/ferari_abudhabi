@@ -1,77 +1,110 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  AfterViewInit,
+  ViewChild,
+  effect,
+  inject,
+  input,
+  output,
+  NgZone,
+} from '@angular/core';
 import { AnimationService } from './animation.service';
-
 @Component({
   selector: 'app-animation',
-  imports: [],
-  standalone: true,
   templateUrl: './animation.html',
   styleUrl: './animation.scss',
+  providers: [AnimationService],
 })
-export class Animation implements OnInit, OnDestroy {
-  @ViewChild('canvas', { static: true })
-  canvasRef!: ElementRef<HTMLCanvasElement>;
-
-  private resizeHandler?: () => void;
-  private mouseMoveHandler?: (event: MouseEvent) => void;
-  private mouseDownHandler?: (event: MouseEvent) => void;
-  private mouseUpHandler?: (event: MouseEvent) => void;
-  private isDragging = false;
-
-  constructor(private animationService: AnimationService) {}
-
-  ngOnInit(): void {
-    const canvas = this.canvasRef.nativeElement;
-    if (!canvas) {
-      console.error('Canvas element not found');
-      return;
+export class Animation implements AfterViewInit, OnDestroy {
+  @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
+  readonly mode = input<'overview' | 'ride'>('overview');
+  readonly paused = input(false);
+  readonly reducedMotion = input(false);
+  readonly statusChange = output<'loading' | 'ready' | 'fallback'>();
+  private readonly scene = inject(AnimationService);
+  private readonly zone = inject(NgZone);
+  private initialized = false;
+  private destroyed = false;
+  private observer?: ResizeObserver;
+  private readonly visibility = () => this.sync();
+  private readonly lost = (event: Event) => {
+    event.preventDefault();
+    this.scene.setPaused(true);
+    this.statusChange.emit('fallback');
+  };
+  private readonly restored = () => {
+    this.scene.resize();
+    this.sync();
+    this.statusChange.emit('ready');
+  };
+  private readonly pointerDown = (event: PointerEvent) => {
+    if (!this.paused()) {
+      this.canvasRef.nativeElement.setPointerCapture(event.pointerId);
+      this.scene.setPointer(event.clientX, event.clientY);
     }
+  };
+  private readonly pointerMove = (event: PointerEvent) => {
+    if (this.canvasRef.nativeElement.hasPointerCapture(event.pointerId) && !this.paused()) {
+      this.scene.setPointer(event.clientX, event.clientY);
+    }
+  };
+  private readonly pointerUp = () => this.scene.resetPointer();
 
-    this.animationService.initialize(canvas);
-    this.animationService.start();
-
-    this.resizeHandler = () => this.animationService.onResize(canvas);
-    window.addEventListener('resize', this.resizeHandler);
-
-    this.mouseMoveHandler = (event: MouseEvent) => {
-      if (this.isDragging) {
-        this.animationService.setMouseX(event.clientX / window.innerWidth);
-      }
-    };
-    window.addEventListener('mousemove', this.mouseMoveHandler);
-
-    this.mouseDownHandler = (event: MouseEvent) => {
-      this.isDragging = true;
-    };
-    window.addEventListener('mousedown', this.mouseDownHandler);
-
-    this.mouseUpHandler = (event: MouseEvent) => {
-      this.isDragging = false;
-    };
-    window.addEventListener('mouseup', this.mouseUpHandler);
+  constructor() {
+    effect(() => {
+      this.mode();
+      this.paused();
+      this.reducedMotion();
+      this.sync();
+    });
   }
-
+  async ngAfterViewInit(): Promise<void> {
+    const canvas = this.canvasRef.nativeElement;
+    try {
+      await this.zone.runOutsideAngular(() => this.scene.initialize(canvas));
+      if (this.destroyed) return;
+      this.zone.runOutsideAngular(() => {
+        this.initialized = true;
+        this.sync();
+        this.observer = new ResizeObserver(() => this.scene.resize());
+        this.observer.observe(canvas);
+      });
+      this.statusChange.emit('ready');
+    } catch {
+      if (this.destroyed) return;
+      this.scene.dispose();
+      this.statusChange.emit('fallback');
+    }
+    document.addEventListener('visibilitychange', this.visibility);
+    canvas.addEventListener('webglcontextlost', this.lost);
+    canvas.addEventListener('webglcontextrestored', this.restored);
+    canvas.addEventListener('pointerdown', this.pointerDown);
+    canvas.addEventListener('pointermove', this.pointerMove);
+    canvas.addEventListener('pointerup', this.pointerUp);
+    canvas.addEventListener('pointercancel', this.pointerUp);
+    canvas.addEventListener('lostpointercapture', this.pointerUp);
+  }
+  private sync(): void {
+    if (!this.initialized) return;
+    this.zone.runOutsideAngular(() => {
+      this.scene.setMode(this.mode(), this.reducedMotion() || this.paused());
+      this.scene.setPaused(this.paused() || document.hidden);
+    });
+  }
   ngOnDestroy(): void {
-    if (this.resizeHandler) {
-      window.removeEventListener('resize', this.resizeHandler);
-      this.resizeHandler = undefined;
-    }
-
-    if (this.mouseMoveHandler) {
-      window.removeEventListener('mousemove', this.mouseMoveHandler);
-      this.mouseMoveHandler = undefined;
-    }
-
-    if (this.mouseDownHandler) {
-      window.removeEventListener('mousedown', this.mouseDownHandler);
-      this.mouseDownHandler = undefined;
-    }
-
-    if (this.mouseUpHandler) {
-      window.removeEventListener('mouseup', this.mouseUpHandler);
-      this.mouseUpHandler = undefined;
-    }
-
-    this.animationService.dispose();
+    this.destroyed = true;
+    this.observer?.disconnect();
+    document.removeEventListener('visibilitychange', this.visibility);
+    const canvas = this.canvasRef.nativeElement;
+    canvas.removeEventListener('webglcontextlost', this.lost);
+    canvas.removeEventListener('webglcontextrestored', this.restored);
+    canvas.removeEventListener('pointerdown', this.pointerDown);
+    canvas.removeEventListener('pointermove', this.pointerMove);
+    canvas.removeEventListener('pointerup', this.pointerUp);
+    canvas.removeEventListener('pointercancel', this.pointerUp);
+    canvas.removeEventListener('lostpointercapture', this.pointerUp);
+    this.scene.dispose();
   }
 }

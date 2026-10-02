@@ -1,9 +1,51 @@
-/* You can add global styles to this file, and also import other style files */
-
-html, body {
+:root {
+  color-scheme: light;
+  --paper: #f5f2e9;
+  --surface: #ebe7dc;
+  --ink: #302e27;
+  --muted: #6c675b;
+  --line: #d9d3c4;
+  --accent: #a4492f;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
   margin: 0;
-  padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #302e27;
+  -webkit-font-smoothing: antialiased;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #a4492f;
+  outline-offset: 5px;
+}
+::selection {
+  background: #d8b89b;
+  color: #25231f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #242721;
+    --surface: #2e322a;
+    --ink: #f0ece0;
+    --muted: #b7b8a9;
+    --line: #474b40;
+    --accent: #eda17e;
+  }
 }

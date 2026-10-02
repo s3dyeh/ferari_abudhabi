@@ -1,3 +1,86 @@
-
-<router-outlet />
-<app-animation />
+<main class="experience" [class.riding]="mode() === 'ride'">
+  <div class="landscape" aria-hidden="true">
+    @defer (on idle) {
+      <app-animation
+        [mode]="mode()"
+        [paused]="portfolioOpen()"
+        [reducedMotion]="reducedMotion()"
+        (statusChange)="sceneStatus.set($event)"
+      />
+    }
+  </div>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <header class="masthead">
+    <a
+      class="identity"
+      href="#"
+      aria-label="Ahmad Sadieh, return to overview"
+      (click)="$event.preventDefault(); selectMode('overview')"
+    >
+      <span class="monogram" aria-hidden="true">as<span>.</span></span>
+      <span class="identity-copy"
+        ><strong>Ahmad Sadieh</strong><span>Full-Stack & AI Engineer</span></span
+      >
+    </a>
+    <app-amman-clock />
+  </header>
+  <section class="introduction" aria-labelledby="intro-title">
+    <p class="eyebrow">Engineering, with intention.</p>
+    <h1 id="intro-title">
+      For people who notice<br class="desktop-break" />
+      when something is<br />
+      <em>almost</em> right.
+    </h1>
+    <p class="intro-copy">
+      I build, troubleshoot, and refine production applications with careful attention to
+      architecture, performance, and detail.
+    </p>
+    <p class="specialties">
+      Angular <span>/</span> Node.js <span>/</span> Oracle <span>/</span> LLM & RAG
+    </p>
+  </section>
+  <app-sun-button [riding]="mode() === 'ride'" (activated)="openPortfolio()" />
+  <footer class="scene-footer">
+    <div class="scene-caption">
+      <span class="caption-line"></span>
+      <div>
+        <strong>A little perspective.</strong><span>Thoughtfully built. Down to the details.</span>
+      </div>
+    </div>
+    <div class="scene-controls" role="group" aria-label="Scene controls">
+      <div class="view-switch" role="group" aria-label="Camera view">
+        <button
+          type="button"
+          [attr.aria-pressed]="mode() === 'overview'"
+          (click)="selectMode('overview')"
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          [disabled]="sceneStatus() !== 'ready'"
+          [attr.aria-pressed]="mode() === 'ride'"
+          (click)="selectMode('ride')"
+        >
+          Take a ride <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+  @if (sceneStatus() === 'fallback') {
+    <p class="scene-notice" role="status">
+      A still moment. Your browser couldn’t render the ride; the portfolio is ready to explore.
+    </p>
+  }
+</main>
+<dialog
+  #portfolioDialog
+  class="portfolio-dialog"
+  [style.--reveal-origin]="revealOrigin()"
+  aria-labelledby="portfolio-title"
+  (keydown)="containDialogFocus($event)"
+  (close)="onDialogClosed()"
+  (cancel)="$event.preventDefault(); closePortfolio()"
+>
+  <app-portfolio (dismissed)="closePortfolio()" />
+</dialog>

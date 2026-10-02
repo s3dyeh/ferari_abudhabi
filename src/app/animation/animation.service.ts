@@ -1,405 +1,391 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
-import {
-  RollerCoasterGeometry,
-  RollerCoasterLiftersGeometry,
-  RollerCoasterShadowGeometry,
-} from 'three/examples/jsm/misc/RollerCoaster.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { advanceProgress, createTrackCurve, groundHeight } from './track';
 
-interface ParametricCurve {
-  getPointAt(t: number): THREE.Vector3;
-  getTangentAt(t: number): THREE.Vector3;
-}
-
-const CONFIG = {
-  CAMERA_FOV: 50,
-  CAMERA_NEAR: 0.1,
-  CAMERA_FAR: 500,
-  CAMERA_HEIGHT_OFFSET: 0.3,
-
-  BACKGROUND_COLOR: 0x87ceeb,
-  GROUND_COLOR: 0xd2b48c,
-  SHADOW_COLOR: 0x8b7355,
-  FERRARI_RED: 0xdc0000,
-  TRACK_METAL: 0x2c3e50,
-  SKY_LIGHT_COLOR: 0xffe4b5,
-  GROUND_LIGHT_COLOR: 0x8b7355,
-  AMBIENT_LIGHT_COLOR: 0xffffff,
-  DIRECTIONAL_LIGHT_COLOR: 0xffe4b5,
-  HEMISPHERE_INTENSITY: 1.5,
-  AMBIENT_INTENSITY: 0.4,
-  DIRECTIONAL_INTENSITY: 1.2,
-
-  CURVE_DIVISIONS: 2000,
-  LIFTER_DIVISIONS: 150,
-  SHADOW_DIVISIONS: 600,
-  CURVE_SCALE: 2.5,
-  TRACK_WIDTH_SCALE: 1.2,
-
-  INITIAL_VELOCITY: 0.0002,
-  MIN_VELOCITY: 0.00005,
-  MAX_VELOCITY: 0.004,
-  GRAVITY_FACTOR: 0.000003,
-  VELOCITY_DAMPING: 0.995,
-  FIXED_DELTA_TIME: 16,
-  ACCELERATION_SMOOTHING: 0.95,
-
-  GROUND_SIZE: 800,
-  GROUND_HEIGHT: 0.1,
-  FOG_NEAR: 100,
-  FOG_FAR: 400,
-} as const;
-
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class AnimationService {
-  private scene!: THREE.Scene;
-  private camera!: THREE.PerspectiveCamera;
-  private renderer!: THREE.WebGLRenderer;
-  private animationId = 0;
+  private scene = new THREE.Scene();
+  private camera = new THREE.PerspectiveCamera(43, 1, 0.1, 1400);
+  private renderer?: THREE.WebGLRenderer;
+  private canvas?: HTMLCanvasElement;
+  private curve = createTrackCurve();
+  private vehicle = new THREE.Group();
+  private modelRequested = false;
+  private fallbackCar = new THREE.Group();
+  private frame = 0;
+  private lastTime = 0;
+  private lastRenderTime = 0;
+  private progress = 0.08;
+  private paused = true;
+  private disposed = false;
+  private mode: 'overview' | 'ride' = 'overview';
+  private pointer = new THREE.Vector2();
+  private targetCamera = new THREE.Vector3();
+  private targetLook = new THREE.Vector3();
+  private currentLook = new THREE.Vector3(0, 30, 0);
+  private fixedAccumulator = 0;
 
-  private progress = 0;
-  private velocity: number = CONFIG.INITIAL_VELOCITY;
-  private curve!: ParametricCurve;
-
-  private carModel?: THREE.Group;
-  private mixer?: THREE.AnimationMixer;
-
-  private mouseX = 0;
-
-  private geometries: THREE.BufferGeometry[] = [];
-  private materials: THREE.Material[] = [];
-
-  /**
-   * Initializes the Three.js scene with the provided canvas element
-   */
-  initialize(canvas: HTMLCanvasElement): void {
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(CONFIG.BACKGROUND_COLOR);
-    this.scene.fog = new THREE.Fog(
-      CONFIG.BACKGROUND_COLOR,
-      CONFIG.FOG_NEAR,
-      CONFIG.FOG_FAR
+  async initialize(canvas: HTMLCanvasElement): Promise<void> {
+    this.canvas = canvas;
+    this.scene.background = new THREE.Color('#e8dfcd');
+    this.scene.fog = new THREE.FogExp2('#e5d9c3', 0.0027);
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, canvas.clientWidth < 700 ? 1.25 : 1.7),
     );
-
-    this.camera = new THREE.PerspectiveCamera(
-      CONFIG.CAMERA_FOV,
-      window.innerWidth / window.innerHeight,
-      CONFIG.CAMERA_NEAR,
-      CONFIG.CAMERA_FAR
-    );
-    this.camera.position.set(0, 5, 5);
-
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    this.curve = this.createParametricCurve();
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // The landscape and track are static; their shadow map needs only one render.
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = true;
     this.createLighting();
+    await this.yieldToBrowser();
+    if (this.disposed) return;
+    this.createTerrain();
+    await this.yieldToBrowser();
+    if (this.disposed) return;
     this.createTrack();
-    this.createGround();
-    this.loadCarModel();
+    this.createVehicle();
+    this.scene.add(this.vehicle);
+    this.resize(false);
+    this.positionVehicle();
+    this.positionCamera(1, true);
+    // Compile shaders asynchronously where parallel compilation is available.
+    // The sun, clock, and portfolio remain responsive while the scene prepares.
+    await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.disposed) return;
+    this.render();
   }
 
-  /**
-   * Starts the animation loop
-   */
-  start(): void {
-    this.animate();
+  private yieldToBrowser(): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
-  /**
-   * Stops the animation and cleans up resources
-   */
-  dispose(): void {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = 0;
-    }
-
-    this.geometries.forEach((geometry) => geometry.dispose());
-    this.geometries = [];
-
-    this.materials.forEach((material) => material.dispose());
-    this.materials = [];
-
-    if (this.renderer) {
-      this.renderer.dispose();
-      this.renderer.forceContextLoss();
-    }
-
-    if (this.scene) {
-      this.scene.clear();
-    }
-  }
-
-  /**
-   * Handles window resize events
-   */
-  onResize(canvas: HTMLCanvasElement): void {
-    if (!this.camera || !this.renderer) return;
-
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  }
-
-  /**
-   * Sets the mouse X position (normalized 0-1)
-   */
-  setMouseX(normalizedX: number): void {
-    this.mouseX = normalizedX;
-  }
-
-  /**
-   * Creates a parametric curve for the roller coaster path
-   * Uses mathematical functions (sin/cos) for perfectly smooth looping
-   */
-  private createParametricCurve(): ParametricCurve {
-    const PI2 = Math.PI * 2;
-
-    const vector = new THREE.Vector3();
-    const vector2 = new THREE.Vector3();
-
-    return {
-      getPointAt(t: number): THREE.Vector3 {
-        const angle = t * PI2;
-
-        const x = Math.sin(angle * 2) * Math.cos(angle * 3) * 60;
-        const y = Math.sin(angle * 4) * 8 + Math.cos(angle * 8) * 4 + 15;
-        const z = Math.sin(angle * 1.5) * Math.cos(angle * 2) * 60;
-
-        return vector.set(x, y, z).multiplyScalar(CONFIG.CURVE_SCALE);
-      },
-
-      getTangentAt(t: number): THREE.Vector3 {
-        const delta = 0.0001;
-        const t1 = Math.max(0, t - delta);
-        const t2 = Math.min(1, t + delta);
-
-        return vector2
-          .copy(this.getPointAt(t2))
-          .sub(this.getPointAt(t1))
-          .normalize();
-      },
-    };
-  }
-
-  /**
-   * Creates realistic lighting for desert environment
-   */
   private createLighting(): void {
-    const hemisphereLight = new THREE.HemisphereLight(
-      CONFIG.SKY_LIGHT_COLOR,
-      CONFIG.GROUND_LIGHT_COLOR,
-      CONFIG.HEMISPHERE_INTENSITY
-    );
-    this.scene.add(hemisphereLight);
-
-    const ambientLight = new THREE.AmbientLight(
-      CONFIG.AMBIENT_LIGHT_COLOR,
-      CONFIG.AMBIENT_INTENSITY
-    );
-    this.scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(
-      CONFIG.DIRECTIONAL_LIGHT_COLOR,
-      CONFIG.DIRECTIONAL_INTENSITY
-    );
-    directionalLight.position.set(100, 200, 100);
-    directionalLight.castShadow = false;
-    this.scene.add(directionalLight);
+    this.scene.add(new THREE.HemisphereLight('#fff1d1', '#8c6642', 2.8));
+    const sun = new THREE.DirectionalLight('#ffdfab', 3.5);
+    sun.position.set(100, 105, -80);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -120;
+    sun.shadow.camera.right = 120;
+    sun.shadow.camera.top = 120;
+    sun.shadow.camera.bottom = -120;
+    sun.shadow.camera.far = 400;
+    sun.shadow.normalBias = 0.12;
+    sun.shadow.bias = -0.0001;
+    this.scene.add(sun);
   }
 
-  /**
-   * Creates the roller coaster track with supports and shadows
-   */
-  private createTrack(): void {
-    const trackGeometry = new RollerCoasterGeometry(
-      this.curve,
-      CONFIG.CURVE_DIVISIONS
-    );
-    const trackMaterial = new THREE.MeshStandardMaterial({
-      color: CONFIG.FERRARI_RED,
-      metalness: 0.8,
-      roughness: 0.3,
-      envMapIntensity: 1.0,
-    });
-    const trackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
-
-    this.geometries.push(trackGeometry);
-    this.materials.push(trackMaterial);
-    this.scene.add(trackMesh);
-
-    const liftersGeometry = new RollerCoasterLiftersGeometry(
-      this.curve,
-      CONFIG.LIFTER_DIVISIONS
-    );
-    const liftersMaterial = new THREE.MeshStandardMaterial({
-      color: CONFIG.TRACK_METAL,
-      metalness: 0.9,
-      roughness: 0.4,
-    });
-    const liftersMesh = new THREE.Mesh(liftersGeometry, liftersMaterial);
-    liftersMesh.position.y = CONFIG.GROUND_HEIGHT;
-
-    this.geometries.push(liftersGeometry);
-    this.materials.push(liftersMaterial);
-    this.scene.add(liftersMesh);
-
-    const shadowGeometry = new RollerCoasterShadowGeometry(
-      this.curve,
-      CONFIG.SHADOW_DIVISIONS
-    );
-    const shadowMaterial = new THREE.MeshBasicMaterial({
-      color: CONFIG.SHADOW_COLOR,
-      transparent: true,
-      depthWrite: false,
-    });
-    const shadowMesh = new THREE.Mesh(shadowGeometry, shadowMaterial);
-    shadowMesh.position.y = CONFIG.GROUND_HEIGHT;
-
-    this.geometries.push(shadowGeometry);
-    this.materials.push(shadowMaterial);
-    this.scene.add(shadowMesh);
-  }
-
-  /**
-   * Creates the desert ground plane
-   */
-  private createGround(): void {
-    const groundGeometry = new THREE.PlaneGeometry(
-      CONFIG.GROUND_SIZE,
-      CONFIG.GROUND_SIZE,
-      50,
-      50
-    );
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: CONFIG.GROUND_COLOR,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-
-    this.geometries.push(groundGeometry);
-    this.materials.push(groundMaterial);
-    this.scene.add(ground);
-  }
-
-  /**
-   * Loads the Red Bull RB6 F1 car 3D model
-   */
-  private loadCarModel(): void {
-    const loader = new GLTFLoader();
-
-    loader.load(
-      'rb6.glb',
-      (gltf) => {
-        this.carModel = gltf.scene;
-
-        if (gltf.animations && gltf.animations.length > 0) {
-          this.mixer = new THREE.AnimationMixer(this.carModel);
-          gltf.animations.forEach((clip) => {
-            const action = this.mixer!.clipAction(clip);
-            action.play();
-          });
-        }
-
-        const carScale = 0.05;
-        this.carModel.scale.set(carScale, carScale, carScale);
-
-        this.scene.add(this.carModel);
-      },
-      () => {},
-      (error) => {
-        console.error('Error loading car model:', error);
-      }
-    );
-  }
-
-  /**
-   * Animation loop - runs every frame (~60 FPS)
-   */
-  private animate = (): void => {
-    this.animationId = requestAnimationFrame(this.animate);
-
-    this.updateCameraPosition();
-    this.updateCarPosition();
-
-    if (this.mixer) {
-      this.mixer.update(0.016);
+  private createTerrain(): void {
+    const geometry = new THREE.PlaneGeometry(1500, 1500, 100, 100);
+    geometry.rotateX(-Math.PI / 2);
+    const positions = geometry.attributes['position'];
+    const colors: number[] = [];
+    const low = new THREE.Color('#b6946e');
+    const high = new THREE.Color('#e1c298');
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i),
+        z = positions.getZ(i);
+      const height = groundHeight(x, z);
+      positions.setY(i, height);
+      const color = low.clone().lerp(high, THREE.MathUtils.clamp((height + 6) / 25, 0, 1));
+      colors.push(color.r, color.g, color.b);
     }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    const terrain = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }),
+    );
+    terrain.receiveShadow = true;
+    this.scene.add(terrain);
+  }
 
-    this.renderer.render(this.scene, this.camera);
+  private createTrack(): void {
+    const red = new THREE.MeshStandardMaterial({
+      color: '#9c3324',
+      metalness: 0.42,
+      roughness: 0.45,
+    });
+    const steel = new THREE.MeshStandardMaterial({
+      color: '#746959',
+      metalness: 0.45,
+      roughness: 0.65,
+    });
+    const points = this.curve.getSpacedPoints(250);
+    const left: THREE.Vector3[] = [],
+      right: THREE.Vector3[] = [],
+      spine: THREE.Vector3[] = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const t = i / (points.length - 1);
+      const tangent = this.curve.getTangentAt(t, new THREE.Vector3());
+      const side = new THREE.Vector3()
+        .crossVectors(tangent, new THREE.Vector3(0, 1, 0))
+        .normalize();
+      left.push(points[i].clone().addScaledVector(side, 1.15));
+      right.push(points[i].clone().addScaledVector(side, -1.15));
+      spine.push(points[i].clone().add(new THREE.Vector3(0, -0.85, 0)));
+    }
+    for (const [index, railPoints] of [left, right, spine].entries()) {
+      const path = new THREE.CatmullRomCurve3(railPoints, true);
+      const mesh = new THREE.Mesh(
+        new THREE.TubeGeometry(path, 600, index === 2 ? 0.26 : 0.16, 6, true),
+        red,
+      );
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.scene.add(mesh);
+    }
+    const tieCount = 270;
+    const ties = new THREE.InstancedMesh(new THREE.BoxGeometry(2.7, 0.15, 0.22), red, tieCount);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < tieCount; i++) {
+      const t = i / tieCount;
+      const point = this.curve.getPointAt(t, new THREE.Vector3());
+      dummy.position.copy(point);
+      dummy.lookAt(point.clone().add(this.curve.getTangentAt(t, new THREE.Vector3())));
+      dummy.updateMatrix();
+      ties.setMatrixAt(i, dummy.matrix);
+    }
+    ties.castShadow = true;
+    this.scene.add(ties);
+    const supportCount = 62;
+    const supports = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.2, 0.3, 1, 7),
+      steel,
+      supportCount * 2,
+    );
+    const footings = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.8, 0.9, 0.35, 8),
+      new THREE.MeshStandardMaterial({ color: '#b4a38a', roughness: 0.95 }),
+      supportCount * 2,
+    );
+    for (let i = 0; i < supportCount; i++) {
+      const t = i / supportCount;
+      const point = this.curve.getPointAt(t, new THREE.Vector3());
+      const side = new THREE.Vector3()
+        .crossVectors(this.curve.getTangentAt(t), new THREE.Vector3(0, 1, 0))
+        .normalize();
+      for (let j = 0; j < 2; j++) {
+        const p = point.clone().addScaledVector(side, j ? 1.05 : -1.05);
+        const base = groundHeight(p.x, p.z);
+        dummy.position.set(p.x, (p.y + base) / 2, p.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, p.y - base, 1);
+        dummy.updateMatrix();
+        supports.setMatrixAt(i * 2 + j, dummy.matrix);
+        dummy.position.y = base + 0.15;
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        footings.setMatrixAt(i * 2 + j, dummy.matrix);
+      }
+    }
+    supports.castShadow = true;
+    this.scene.add(supports, footings);
+  }
+
+  private createVehicle(): void {
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(1.7, 0.65, 3.6),
+      new THREE.MeshStandardMaterial({ color: '#b7271e', metalness: 0.6, roughness: 0.3 }),
+    );
+    body.position.y = 0.5;
+    this.fallbackCar.add(body);
+    const cockpit = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.45, 1.3),
+      new THREE.MeshStandardMaterial({ color: '#242621', roughness: 0.35 }),
+    );
+    cockpit.position.set(0, 1, -0.25);
+    this.fallbackCar.add(cockpit);
+    this.vehicle.add(this.fallbackCar);
+  }
+
+  private loadModel(): void {
+    new GLTFLoader().load(
+      '/rb6.glb',
+      (gltf) => {
+        if (this.disposed) {
+          this.disposeObject(gltf.scene);
+          return;
+        }
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const size = box.getSize(new THREE.Vector3());
+        const scale = 5.5 / Math.max(size.x, size.y, size.z);
+        const center = box.getCenter(new THREE.Vector3());
+        const wrapper = new THREE.Group();
+        gltf.scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+        gltf.scene.scale.setScalar(scale);
+        gltf.scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.castShadow = false;
+            object.receiveShadow = true;
+          }
+        });
+        wrapper.add(gltf.scene);
+        wrapper.position.y = 0.15;
+        this.vehicle.remove(this.fallbackCar);
+        this.disposeObject(this.fallbackCar);
+        this.vehicle.add(wrapper);
+        this.render();
+      },
+      undefined,
+      () => {
+        // Keep the lightweight local car when the optional model cannot load.
+      },
+    );
+  }
+
+  setMode(mode: 'overview' | 'ride', immediate = false): void {
+    if (mode === 'ride' && !this.modelRequested && !this.disposed) {
+      this.modelRequested = true;
+      this.loadModel();
+    }
+    const changed = this.mode !== mode;
+    this.mode = mode;
+    if (changed || immediate) {
+      this.pointer.set(0, 0);
+      if (immediate) {
+        this.positionCamera(1, true);
+        this.render();
+      }
+    }
+  }
+
+  setPaused(paused: boolean): void {
+    if (this.disposed || this.paused === paused) return;
+    this.paused = paused;
+    if (paused) {
+      cancelAnimationFrame(this.frame);
+      this.frame = 0;
+    } else {
+      this.lastTime = 0;
+      this.lastRenderTime = 0;
+      this.frame = requestAnimationFrame(this.animate);
+    }
+  }
+
+  setPointer(x: number, y: number): void {
+    const rect = this.canvas?.getBoundingClientRect();
+    if (!rect) return;
+    this.pointer.set(
+      ((x - rect.left) / rect.width - 0.5) * 2,
+      ((y - rect.top) / rect.height - 0.5) * 2,
+    );
+  }
+  resetPointer(): void {
+    this.pointer.set(0, 0);
+  }
+
+  resize(render = true): void {
+    if (!this.canvas || !this.renderer || this.disposed) return;
+    const width = this.canvas.clientWidth,
+      height = this.canvas.clientHeight;
+    if (!width || !height) return;
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);
+    this.positionCamera(1, true);
+    if (render) this.render();
+  }
+
+  private animate = (now: number): void => {
+    if (this.paused || this.disposed) return;
+    const interval = this.mode === 'overview' ? 1000 / 30 : 1000 / 60;
+    if (now - this.lastRenderTime < interval - 0.5) {
+      this.frame = requestAnimationFrame(this.animate);
+      return;
+    }
+    this.lastRenderTime = now;
+    const dt = this.lastTime ? Math.min((now - this.lastTime) / 1000, 0.05) : 0;
+    this.lastTime = now;
+    // Fixed simulation steps make the path independent of monitor refresh rate.
+    this.fixedAccumulator += dt;
+    while (this.fixedAccumulator >= 1 / 120) {
+      this.progress = advanceProgress(this.progress, 1 / 120);
+      this.fixedAccumulator -= 1 / 120;
+    }
+    this.positionVehicle();
+    this.positionCamera(dt);
+    this.render();
+    this.frame = requestAnimationFrame(this.animate);
   };
 
-  /**
-   * Updates camera position and velocity based on physics
-   */
-  private updateCameraPosition(): void {
-    this.progress += this.velocity;
-    this.progress = this.progress % 1;
-
-    const position = this.curve.getPointAt(this.progress);
-    const tangent = this.curve.getTangentAt(this.progress);
-
-    const slopeEffect = -tangent.y;
-    const acceleration =
-      slopeEffect * CONFIG.GRAVITY_FACTOR * CONFIG.FIXED_DELTA_TIME;
-    this.velocity += acceleration;
-    this.velocity *= CONFIG.VELOCITY_DAMPING;
-
-    this.velocity = Math.max(
-      CONFIG.MIN_VELOCITY,
-      Math.min(CONFIG.MAX_VELOCITY, this.velocity)
-    );
-
-    const cameraOffset = new THREE.Vector3()
-      .copy(tangent)
-      .multiplyScalar(-1.5)
-      .add(new THREE.Vector3(0, 1, 0));
-
-    this.camera.position.copy(position).add(cameraOffset);
-
-    // Add mouse influence on x-axis
-    const mouseOffsetX = (this.mouseX - 0.5) * 20; // Adjust sensitivity as needed
-    this.camera.position.x += mouseOffsetX;
-
-    const lookAhead = new THREE.Vector3()
-      .copy(position)
-      .add(tangent.multiplyScalar(5));
-    this.camera.lookAt(lookAhead);
+  private positionVehicle(): void {
+    const point = this.curve.getPointAt(this.progress, new THREE.Vector3());
+    const tangent = this.curve.getTangentAt(this.progress, new THREE.Vector3());
+    this.vehicle.position.copy(point);
+    this.vehicle.lookAt(point.clone().add(tangent));
   }
 
-  /**
-   * Updates the F1 car position to follow the track
-   */
-  private updateCarPosition(): void {
-    if (!this.carModel) return;
+  private positionCamera(dt: number, immediate = false): void {
+    if (this.mode === 'overview') {
+      const portrait = this.camera.aspect < 1;
+      this.targetCamera.set(portrait ? 160 : 143, portrait ? 140 : 100, portrait ? 215 : 175);
+      this.targetCamera.x += this.pointer.x * 12;
+      this.targetCamera.y += this.pointer.y * 5;
+      this.targetLook.set(portrait ? -10 : -12, portrait ? 68 : 55, 0);
+    } else {
+      const point = this.curve.getPointAt(this.progress, new THREE.Vector3());
+      const tangent = this.curve.getTangentAt(this.progress, new THREE.Vector3());
+      this.targetCamera
+        .copy(point)
+        .addScaledVector(tangent, -9)
+        .add(new THREE.Vector3(this.pointer.x * 2, 4 + this.pointer.y, 0));
+      this.targetLook
+        .copy(this.curve.getPointAt((this.progress + 0.014) % 1))
+        .add(new THREE.Vector3(0, 1, 0));
+    }
+    const amount = immediate ? 1 : 1 - Math.exp(-dt * 4);
+    this.camera.position.lerp(this.targetCamera, amount);
+    this.currentLook.lerp(this.targetLook, amount);
+    this.camera.lookAt(this.currentLook);
+  }
 
-    const position = this.curve.getPointAt(this.progress);
-    const tangent = this.curve.getTangentAt(this.progress);
+  private render(): void {
+    if (!this.disposed) this.renderer?.render(this.scene, this.camera);
+  }
 
-    this.carModel.position.copy(position);
-    this.carModel.position.y += 0.2;
+  private disposeObject(root: THREE.Object3D): void {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    const textures = new Set<THREE.Texture>();
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      geometries.add(object.geometry);
+      const all = Array.isArray(object.material) ? object.material : [object.material];
+      all.forEach((material) => {
+        materials.add(material);
+        Object.values(material).forEach((value) => {
+          if (value instanceof THREE.Texture) textures.add(value);
+        });
+      });
+      if (object instanceof THREE.InstancedMesh) object.dispose();
+    });
+    textures.forEach((texture) => texture.dispose());
+    materials.forEach((material) => material.dispose());
+    geometries.forEach((geometry) => geometry.dispose());
+  }
 
-    const forward = tangent.clone().normalize();
-
-    const up = new THREE.Vector3(0, 1, 0);
-    const right = new THREE.Vector3()
-      .crossVectors(up, forward)
-      .normalize();
-    const carUp = new THREE.Vector3()
-      .crossVectors(forward, right)
-      .normalize();
-
-    const matrix = new THREE.Matrix4();
-    matrix.makeBasis(right, carUp, forward);
-    this.carModel.rotation.setFromRotationMatrix(matrix);
-    this.carModel.rotateY(0);
+  dispose(): void {
+    this.disposed = true;
+    cancelAnimationFrame(this.frame);
+    this.disposeObject(this.scene);
+    this.scene.traverse((object) => {
+      if (object instanceof THREE.Light && 'shadow' in object)
+        (object as THREE.DirectionalLight).shadow?.dispose();
+    });
+    this.scene.clear();
+    this.renderer?.dispose();
+    this.renderer = undefined;
   }
 }

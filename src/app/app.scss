@@ -1,5 +1,376 @@
 :host {
   display: block;
-  width: 100%;
   height: 100%;
+}
+.experience {
+  position: relative;
+  height: 100dvh;
+  min-height: 320px;
+  overflow: hidden;
+  background: #efe6d8;
+  isolation: isolate;
+}
+.landscape {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background: linear-gradient(180deg, #ece8dd 15%, #e6d5ba 55%, #b99063 100%);
+}
+.landscape::after {
+  content: '';
+  position: absolute;
+  inset: 58% -15% -35%;
+  border-radius: 50%;
+  background: #bd9972;
+  z-index: -1;
+  transform: rotate(-8deg);
+}
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: linear-gradient(180deg, #f1eee6d9, #f1eee624 53%, transparent 70%, #e6d9c59c);
+}
+.masthead {
+  position: absolute;
+  top: max(34px, env(safe-area-inset-top));
+  left: 4.2%;
+  right: 4.2%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  color: #302e27;
+  text-decoration: none;
+}
+.monogram {
+  font-size: 46px;
+  font-weight: 650;
+  letter-spacing: -5px;
+  line-height: 1;
+}
+.monogram span {
+  color: #a8442b;
+}
+.identity-copy {
+  display: grid;
+  gap: 5px;
+  border-left: 1px solid #80745b55;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.identity-copy strong {
+  font-weight: 600;
+  font-size: 14px;
+}
+.identity-copy > span {
+  color: #625d51;
+}
+.introduction {
+  position: absolute;
+  left: 8%;
+  top: 20%;
+  max-width: 580px;
+  transition: opacity 350ms;
+}
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.19em;
+  color: #765a3e;
+  margin: 0 0 23px;
+}
+h1 {
+  font-weight: 450;
+  font-size: clamp(32px, 3.6vw, 59px);
+  line-height: 1.12;
+  letter-spacing: -0.055em;
+  margin: 0;
+}
+h1 em {
+  font-style: normal;
+  color: #a4492f;
+}
+.intro-copy {
+  max-width: 370px;
+  color: #635d50;
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 23px 0 0;
+}
+.specialties {
+  color: #605646;
+  font-size: 10px;
+  letter-spacing: 0.035em;
+  margin-top: 24px;
+}
+.specialties span {
+  margin: 0 9px;
+  color: #9b8d79;
+}
+.scene-footer {
+  position: absolute;
+  bottom: max(30px, env(safe-area-inset-bottom));
+  left: 4.2%;
+  right: 4.2%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.scene-caption {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+}
+.caption-line {
+  width: 27px;
+  height: 1px;
+  background: #5d5040;
+}
+.scene-caption div {
+  display: grid;
+  gap: 6px;
+}
+.scene-caption strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.scene-caption div > span {
+  font-size: 10px;
+  color: #605442;
+}
+.scene-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+.view-switch {
+  display: flex;
+  padding: 4px;
+  background: #faf6ecb8;
+  border: 1px solid #fff7;
+  border-radius: 30px;
+}
+.scene-controls button {
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  padding: 10px 15px;
+  border-radius: 24px;
+  color: #4d4539;
+  font: inherit;
+  white-space: nowrap;
+}
+.scene-controls button:hover {
+  background: #fff8;
+}
+.view-switch button[aria-pressed='true'] {
+  background: #39382f;
+  color: #fff8ec;
+}
+.scene-controls button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.view-switch span {
+  margin-left: 6px;
+}
+.scene-notice {
+  position: absolute;
+  bottom: 100px;
+  right: 4%;
+  max-width: 250px;
+  font-size: 11px;
+  color: #56422f;
+}
+.riding .introduction {
+  opacity: 0;
+  pointer-events: none;
+}
+.portfolio-dialog {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  color: var(--ink);
+  background: var(--paper);
+  overflow: clip;
+}
+.portfolio-dialog::backdrop {
+  background: #30251d80;
+}
+.portfolio-dialog[open] {
+  animation: sun-reveal 450ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes sun-reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-origin));
+  }
+  to {
+    clip-path: circle(160vmax at var(--reveal-origin));
+  }
+}
+@media (min-width: 1600px) {
+  .introduction {
+    top: 23%;
+  }
+}
+@media (max-width: 900px) {
+  .introduction {
+    left: 6%;
+    top: 21%;
+    max-width: 55%;
+  }
+  h1 {
+    font-size: 40px;
+  }
+  .intro-copy {
+    font-size: 12px;
+    max-width: 320px;
+  }
+  .scene-caption {
+    display: none;
+  }
+  .scene-footer {
+    justify-content: center;
+  }
+}
+@media (max-width: 600px) {
+  .masthead {
+    top: max(22px, env(safe-area-inset-top));
+    left: 6%;
+    right: 6%;
+  }
+  .monogram {
+    font-size: 34px;
+    letter-spacing: -4px;
+  }
+  .identity {
+    gap: 11px;
+  }
+  .identity-copy {
+    padding-left: 10px;
+    gap: 3px;
+    font-size: 9px;
+  }
+  .identity-copy strong {
+    font-size: 11px;
+  }
+  .introduction {
+    top: 19%;
+    max-width: 88%;
+  }
+  h1 {
+    font-size: clamp(30px, 8vw, 42px);
+  }
+  .eyebrow {
+    margin-bottom: 15px;
+    font-size: 9px;
+  }
+  .intro-copy {
+    max-width: 285px;
+    font-size: 11px;
+    line-height: 1.65;
+    margin-top: 16px;
+  }
+  .specialties {
+    font-size: 9px;
+    margin-top: 16px;
+  }
+  .specialties span {
+    margin: 0 5px;
+  }
+  .scene-footer {
+    bottom: max(22px, env(safe-area-inset-bottom));
+    left: 3%;
+    right: 3%;
+  }
+  .scene-controls {
+    gap: 3px;
+    font-size: 10px;
+  }
+  .scene-controls button {
+    padding: 9px 10px;
+  }
+  .scene-notice {
+    bottom: 86px;
+    max-width: 220px;
+    font-size: 10px;
+  }
+}
+@media (max-height: 600px) and (min-width: 601px) {
+  .masthead {
+    top: 18px;
+  }
+  .introduction {
+    top: 24%;
+  }
+  h1 {
+    font-size: 32px;
+  }
+  .eyebrow {
+    margin-bottom: 12px;
+  }
+  .intro-copy {
+    margin-top: 12px;
+    font-size: 11px;
+    max-width: 310px;
+  }
+  .specialties {
+    margin-top: 12px;
+  }
+  .scene-footer {
+    bottom: 16px;
+  }
+}
+@media (max-height: 650px) and (max-width: 600px) {
+  .introduction {
+    top: 20%;
+  }
+  h1 {
+    font-size: 28px;
+  }
+  .intro-copy {
+    max-width: 250px;
+    font-size: 10px;
+  }
+  .specialties {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .monogram {
+    display: none;
+  }
+  .identity-copy {
+    border: 0;
+    padding: 0;
+  }
+  .introduction {
+    top: 19%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-dialog[open] {
+    animation: none;
+  }
+  .introduction {
+    transition: none;
+  }
 }

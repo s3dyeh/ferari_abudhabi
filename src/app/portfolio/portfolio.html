@@ -1,0 +1,87 @@
+<header class="portfolio-header">
+  <div class="portfolio-brand">Ahmad Sadieh<span>Full-Stack & AI Engineer</span></div>
+  <button type="button" class="close-button" autofocus (click)="dismissed.emit()">
+    Back to the sun <span aria-hidden="true">×</span>
+  </button>
+</header>
+<div class="portfolio-scroll" role="region" tabindex="0" aria-label="Portfolio content">
+  <div class="portfolio-content">
+    <section class="portfolio-intro">
+      <p class="section-label">The work behind the details</p>
+      <h2 id="portfolio-title">Good systems don’t<br />happen by accident.</h2>
+      <p>
+        I’m Ahmad, a Computer Engineer building full-stack applications and practical AI
+        integrations. I investigate the hard problems, understand what’s already there, and make it
+        work better.
+      </p>
+      <div class="intro-footnote">Clear architecture. Careful execution. Real production work.</div>
+    </section>
+    <section aria-labelledby="work-title">
+      <div class="section-heading">
+        <h3 id="work-title">Selected work</h3>
+        <span>Built, connected, delivered.</span>
+      </div>
+      <div class="projects">
+        @for (project of projects; track project.name) {
+          <article class="project" [class]="'project ' + project.tone">
+            @if (project.image) {
+              <div class="project-image">
+                <img
+                  [src]="project.image"
+                  [alt]="project.imageAlt"
+                  width="1920"
+                  height="1028"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            } @else {
+              <div class="project-wordmark" aria-hidden="true">
+                <span>{{ project.name }}</span
+                ><span class="wordmark-category">{{ project.category }}</span>
+              </div>
+            }
+            <div class="project-body">
+              <p class="project-category">{{ project.category }}</p>
+              <h4>{{ project.name }}</h4>
+              <p class="project-summary">{{ project.summary }}</p>
+              <p class="contribution">{{ project.contribution }}</p>
+              <details>
+                <summary>Details that matter <span aria-hidden="true">+</span></summary>
+                <p>{{ project.detail }}</p>
+              </details>
+              <ul class="technologies" aria-label="Technologies and capabilities">
+                @for (technology of project.technologies; track technology) {
+                  <li>{{ technology }}</li>
+                }
+              </ul>
+              <div class="project-links">
+                @for (link of project.links; track link.url) {
+                  <a [href]="link.url" target="_blank" rel="noopener noreferrer"
+                    >{{ link.label }} <span aria-hidden="true">↗</span
+                    ><span class="sr-only"> (opens in a new tab)</span></a
+                  >
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+    <section class="expertise" aria-labelledby="expertise-title">
+      <div class="section-heading"><h3 id="expertise-title">Where I can help</h3></div>
+      <div class="expertise-grid">
+        @for (item of expertise; track item.title) {
+          <article>
+            <h4>{{ item.title }}</h4>
+            <p>{{ item.description }}</p>
+          </article>
+        }
+      </div>
+    </section>
+    <div class="portfolio-footer">
+      <p>For the details you notice.<br /><strong>And the ones your users never should.</strong></p>
+      <span>Ahmad Sadieh</span>
+    </div>
+  </div>
+</div>
