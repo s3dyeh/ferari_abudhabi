@@ -18,7 +18,7 @@ describe('Portfolio experience', () => {
       deferBlockBehavior: DeferBlockBehavior.Manual,
     }).compileComponents();
   });
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(() => { TestBed.resetTestingModule(); vi.useRealTimers(); });
 
   it('opens the portfolio from the sun and restores focus on dismissal', () => {
     const fixture = TestBed.createComponent(App);
@@ -44,7 +44,7 @@ describe('Portfolio experience', () => {
     expect(fixture.componentInstance.mode()).toBe('ride');
   });
 
-  it('removes manual pause controls and passes ride mode to the sun', () => {
+  it('passes ride mode to the sun', () => {
     const fixture = TestBed.createComponent(App);
     fixture.componentInstance.selectMode('ride');
     fixture.detectChanges();
@@ -64,6 +64,28 @@ describe('Portfolio experience', () => {
     } as unknown as MediaQueryList);
     const fixture = TestBed.createComponent(App);
     expect(fixture.componentInstance.reducedMotion()).toBe(true);
+  });
+
+  it('starts animation after three seconds without a motion toggle', () => {
+    vi.useFakeTimers();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('.motion-toggle')).toBeNull();
+    expect(root.querySelector('app-neural-art')).toBeNull();
+    vi.advanceTimersByTime(2999);
+    expect(fixture.componentInstance.animationReady()).toBe(false);
+    vi.advanceTimersByTime(1);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.animationReady()).toBe(true);
+  });
+
+  it('cancels startup when leaving the page before three seconds', () => {
+    vi.useFakeTimers();
+    const fixture = TestBed.createComponent(App);
+    fixture.destroy();
+    vi.advanceTimersByTime(3000);
+    expect(fixture.componentInstance.animationReady()).toBe(false);
   });
 
   it('allows portfolio access when the renderer fails', () => {

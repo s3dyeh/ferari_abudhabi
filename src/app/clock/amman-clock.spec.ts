@@ -32,6 +32,7 @@ describe('Amman clock', () => {
     document.dispatchEvent(new Event('visibilitychange'));
     expect(fixture.componentInstance.current().time).toBe('12:00:00');
     fixture.destroy();
+    TestBed.resetTestingModule();
     expect(vi.getTimerCount()).toBe(0);
   });
 });

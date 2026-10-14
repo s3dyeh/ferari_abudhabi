@@ -21,11 +21,11 @@
 .portfolio-brand span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
   font-weight: 400;
   margin-top: 4px;
 }
 .close-button {
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 22px;
@@ -35,7 +35,6 @@
   color: var(--ink);
   padding: 9px 18px;
   cursor: pointer;
-  font-size: 11px;
   min-height: 44px;
 }
 .close-button span {
@@ -64,23 +63,17 @@
 .section-label {
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 10px;
   color: var(--accent);
   margin: 0 0 22px;
 }
-h2 {
+#portfolio-title {
   font-size: clamp(36px, 5vw, 65px);
   font-weight: 450;
   line-height: 1.08;
   letter-spacing: -0.05em;
   margin: 0 0 24px;
 }
-.portfolio-intro > p:not(.section-label) {
-  font-size: 16px;
-  line-height: 1.8;
-  max-width: 600px;
-  color: var(--muted);
-}
+
 .intro-footnote {
   font-size: 12px;
   color: var(--accent);
@@ -93,7 +86,7 @@ h2 {
   gap: 15px;
   margin-bottom: 25px;
 }
-h3 {
+.section-heading h2 {
   font-size: 23px;
   letter-spacing: -0.025em;
   font-weight: 500;
@@ -101,7 +94,6 @@ h3 {
 }
 .section-heading > span {
   color: var(--muted);
-  font-size: 11px;
 }
 .projects {
   display: grid;
@@ -115,9 +107,7 @@ h3 {
 .project-image,
 .project-wordmark {
   aspect-ratio: 1.86;
-  background: var(--surface);
   overflow: hidden;
-  border-radius: 5px;
 }
 .project-image {
   position: relative;
@@ -148,13 +138,7 @@ h3 {
   color: #f4eedc;
   background: #46513d;
 }
-.project-wordmark > span:first-child {
-  font-size: clamp(30px, 4vw, 53px);
-  font-weight: 450;
-  letter-spacing: -0.065em;
-}
 .wordmark-category {
-  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0.8;
@@ -170,22 +154,19 @@ h3 {
   padding: 23px 0 0;
 }
 .project-category {
-  font-size: 10px;
   color: var(--muted);
   margin: 0 0 8px;
 }
-h4 {
+.project h3 {
   font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.035em;
   margin: 0;
 }
 .project-summary {
-  font-size: 14px;
   margin: 12px 0;
 }
 .contribution {
-  font-size: 13px;
   color: var(--muted);
   line-height: 1.8;
   margin-bottom: 20px;
@@ -218,7 +199,6 @@ details[open] summary span {
   transform: rotate(45deg);
 }
 details p {
-  font-size: 13px;
   line-height: 1.8;
   margin: 0 0 18px;
   color: var(--muted);
@@ -226,11 +206,9 @@ details p {
 .technologies {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px 14px;
   list-style: none;
   padding: 0;
   margin: 18px 0;
-  font-size: 10px;
   color: var(--muted);
 }
 .project-links {
@@ -240,7 +218,6 @@ details p {
 }
 .project-links a {
   color: var(--accent);
-  font-size: 12px;
   text-decoration: none;
   padding: 7px 0;
 }
@@ -248,27 +225,8 @@ details p {
   text-decoration: underline;
   text-underline-offset: 5px;
 }
-.project-links a > span:first-child {
+.project-links app-arrow-icon {
   margin-left: 7px;
-}
-.expertise {
-  margin-top: 75px;
-  padding-top: 40px;
-  border-top: 1px solid var(--line);
-}
-.expertise-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px 60px;
-}
-.expertise h4 {
-  font-size: 19px;
-  letter-spacing: -0.025em;
-}
-.expertise p {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.8;
 }
 .portfolio-footer {
   display: flex;
@@ -286,24 +244,7 @@ details p {
   letter-spacing: -0.035em;
 }
 .portfolio-footer strong {
-  font-weight: 400;
   color: var(--muted);
-}
-.portfolio-footer > span {
-  font-size: 11px;
-  color: var(--muted);
-  padding-bottom: 22px;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 @media (max-width: 650px) {
   .portfolio-header {
@@ -318,7 +259,6 @@ details p {
   }
   .close-button {
     gap: 12px;
-    font-size: 10px;
     padding: 7px 13px;
   }
   .portfolio-content {
@@ -327,18 +267,11 @@ details p {
   .portfolio-intro {
     padding-bottom: 45px;
   }
-  .portfolio-intro > p:not(.section-label) {
-    font-size: 14px;
-  }
-  .projects,
-  .expertise-grid {
+  .projects {
     grid-template-columns: 1fr;
   }
   .section-heading > span {
     display: none;
-  }
-  .project-wordmark > span:first-child {
-    font-size: 44px;
   }
   .portfolio-footer {
     align-items: start;
@@ -354,3 +287,37 @@ details p {
     transition: none;
   }
 }
+
+.portfolio-header { padding-top: max(22px, env(safe-area-inset-top)); }
+.portfolio-content { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+.portfolio-brand span, .section-label, .project-category, .wordmark-category,
+.technologies, .section-heading > span { font-size: 12px; }
+.project-summary { font-size: 16px; line-height: 1.6; }
+.contribution, details p { font-size: 14px; }
+.project-image, .project-wordmark { border-radius: 12px; }
+.project-links a { min-height: 44px; display: inline-flex; align-items: center; font-size: 13px; }
+.technologies { gap: 8px; }
+.technologies li { padding: 5px 9px; background: var(--surface); border-radius: 5px; }
+summary { min-height: 48px; font-size: 13px; }
+summary span { transition: transform 180ms ease; }
+.close-button { font-size: 12px; }
+.project { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+h2, h3, h4 { text-wrap: balance; }
+@media (max-width: 650px) {
+  .portfolio-brand span { font-size: 11px; max-width: 150px; line-height: 1.5; }
+  
+}
+
+.portfolio-intro app-social-links { margin-top: 24px; }
+
+.section-nav { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 24px; }
+.section-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-size: 13px; text-underline-offset: 4px; }
+
+.project-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-bottom:12px; }
+.project-meta .project-category { margin:0; }
+.internal-badge { font-size:11px; color:var(--accent); border:1px solid var(--line); padding:5px 9px; border-radius:4px; }
+.project-role { color:var(--accent); font-size:12px; margin:10px 0; }
+.project-capabilities { padding-left:18px; color:var(--muted); font-size:14px; line-height:1.75; margin:20px 0; }
+.project-capabilities li + li { margin-top:8px; }
+.project-wordmark { color:#f4eedc; padding:20px; box-sizing:border-box; text-align:center; }
+.project-wordmark > span:first-child { font-size:clamp(25px,3vw,42px); letter-spacing:-.045em; }

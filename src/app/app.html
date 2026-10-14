@@ -3,13 +3,15 @@
     @defer (on idle) {
       <app-animation
         [mode]="mode()"
-        [paused]="portfolioOpen()"
+        [night]="theme.night()"
+        [paused]="portfolioOpen() || !animationReady() || reducedMotion()"
         [reducedMotion]="reducedMotion()"
         (statusChange)="sceneStatus.set($event)"
       />
     }
   </div>
   <div class="atmosphere" aria-hidden="true"></div>
+
   <header class="masthead">
     <a
       class="identity"
@@ -22,29 +24,31 @@
         ><strong>Ahmad Sadieh</strong><span>Full-Stack & AI Engineer</span></span
       >
     </a>
-    <app-amman-clock />
+    <app-amman-clock ngSkipHydration />
   </header>
-  <section class="introduction" aria-labelledby="intro-title">
-    <p class="eyebrow">Engineering, with intention.</p>
+  <section class="introduction" aria-labelledby="intro-title" [attr.inert]="mode() === 'ride' ? '' : null">
+    <p class="eyebrow">Ahmad Sadieh / Engineer. Builder. Problem solver.</p>
     <h1 id="intro-title">
-      For people who notice<br class="desktop-break" />
-      when something is<br />
-      <em>almost</em> right.
+      I find the<br />
+      <em>connection</em><br />
+      others miss.
     </h1>
     <p class="intro-copy">
-      I build, troubleshoot, and refine production applications with careful attention to
-      architecture, performance, and detail.
+      Between the interface and the database. Between your knowledge and AI.
+      I build, investigate, and connect the systems that make ideas work.
     </p>
     <p class="specialties">
-      Angular <span>/</span> Node.js <span>/</span> Oracle <span>/</span> LLM & RAG
+      AI agents <span>/</span> RAG <span>/</span> Full-stack engineering
     </p>
+    <app-social-links />
+    <a class="work-link" href="/work/">Services, work &amp; FAQs <app-arrow-icon /></a>
   </section>
   <app-sun-button [riding]="mode() === 'ride'" (activated)="openPortfolio()" />
   <footer class="scene-footer">
     <div class="scene-caption">
       <span class="caption-line"></span>
       <div>
-        <strong>A little perspective.</strong><span>Thoughtfully built. Down to the details.</span>
+        <strong>Curiosity is where it starts.</strong><span>Careful engineering is how it ships.</span>
       </div>
     </div>
     <div class="scene-controls" role="group" aria-label="Scene controls">
@@ -62,7 +66,7 @@
           [attr.aria-pressed]="mode() === 'ride'"
           (click)="selectMode('ride')"
         >
-          Take a ride <span aria-hidden="true">↗</span>
+          {{ sceneStatus() === 'loading' ? 'Preparing ride' : 'Take a ride' }} <app-arrow-icon />
         </button>
       </div>
     </div>

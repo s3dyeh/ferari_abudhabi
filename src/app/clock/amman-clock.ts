@@ -1,3 +1,6 @@
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
+import { AmmanTheme } from './amman-theme';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 const timeFormat = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Amman',
@@ -22,12 +25,13 @@ export function formatAmmanTime(date: Date) {
     <div class="time-row">
       <span class="city">Amman</span><time>{{ current().time }}</time>
     </div>
-    <p>{{ current().date }}</p>
+    <p>{{ current().date }}</p><span class="period">{{ theme.night() ? 'Night in Amman' : 'Day in Amman' }} &middot; Auto theme</span>
   </aside>`,
   styles: `
+    .period { display: block; margin-top: 8px; font-size: 10px; color: var(--accent); }
     aside {
       text-align: right;
-      color: #4f493e;
+      color: var(--ink);
     }
     .time-row {
       display: flex;
@@ -51,7 +55,7 @@ export function formatAmmanTime(date: Date) {
       margin: 7px 0 0;
       font-size: 10px;
       min-width: 185px;
-      color: #635848;
+      color: var(--muted);
     }
     @media (max-width: 600px) {
       .time-row {
@@ -73,8 +77,10 @@ export function formatAmmanTime(date: Date) {
   `,
 })
 export class AmmanClock {
+  readonly theme = inject(AmmanTheme);
   readonly current = signal(formatAmmanTime(new Date()));
   constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     const update = () => this.current.set(formatAmmanTime(new Date()));
     const timer = window.setInterval(update, 1000);
     const visible = () => {

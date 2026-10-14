@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { advanceProgress, createTrackCurve, groundHeight } from './track';
+import { createRoadSigns, orientRoadSigns, signApproachSpeed } from './road-signs';
+import { createTrackCurve, groundHeight } from './track';
+
+import { approachDrivingSpeed, targetDrivingSpeed } from './vehicle-motion';
 
 @Injectable()
 export class AnimationService {
@@ -11,8 +14,18 @@ export class AnimationService {
   private canvas?: HTMLCanvasElement;
   private curve = createTrackCurve();
   private vehicle = new THREE.Group();
+  private chassis = new THREE.Group();
+  private speed = 0;
+  private acceleration = 0;
+  private turnCurvature = 0;
+  private trackLength = this.curve.getLength();
+  private pose = new THREE.Object3D();
+  private roadSigns = new THREE.Group();
   private modelRequested = false;
   private fallbackCar = new THREE.Group();
+  private night = false;
+  private ambient = new THREE.HemisphereLight('#fff1d1', '#8c6642', 2.8);
+  private sunlight = new THREE.DirectionalLight('#ffdfab', 3.5);
   private frame = 0;
   private lastTime = 0;
   private lastRenderTime = 0;
@@ -44,7 +57,7 @@ export class AnimationService {
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // The landscape and track are static; their shadow map needs only one render.
+    // Cache shadows until lighting or the camera-facing sign boards change.
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.needsUpdate = true;
     this.createLighting();
@@ -54,6 +67,8 @@ export class AnimationService {
     await this.yieldToBrowser();
     if (this.disposed) return;
     this.createTrack();
+    this.roadSigns = createRoadSigns(this.curve);
+    this.scene.add(this.roadSigns);
     this.createVehicle();
     this.scene.add(this.vehicle);
     this.resize(false);
@@ -70,9 +85,26 @@ export class AnimationService {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
+  setNight(night: boolean): void {
+    if (this.night === night) return;
+    this.night = night;
+    this.scene.background = new THREE.Color(night ? '#171f2b' : '#e8dfcd');
+    this.scene.fog = new THREE.FogExp2(night ? '#202a38' : '#e5d9c3', 0.0027);
+    this.ambient.color.set(night ? '#a9c4ed' : '#fff1d1');
+    this.ambient.groundColor.set(night ? '#303a50' : '#8c6642');
+    this.ambient.intensity = night ? 1.2 : 2.8;
+    this.sunlight.color.set(night ? '#b8d2ff' : '#ffdfab');
+    this.sunlight.intensity = night ? 1.1 : 3.5;
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = night ? 0.85 : 1.15;
+      this.renderer.shadowMap.needsUpdate = true;
+      this.render();
+    }
+  }
+
   private createLighting(): void {
-    this.scene.add(new THREE.HemisphereLight('#fff1d1', '#8c6642', 2.8));
-    const sun = new THREE.DirectionalLight('#ffdfab', 3.5);
+    this.scene.add(this.ambient);
+    const sun = this.sunlight;
     sun.position.set(100, 105, -80);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -207,7 +239,8 @@ export class AnimationService {
     );
     cockpit.position.set(0, 1, -0.25);
     this.fallbackCar.add(cockpit);
-    this.vehicle.add(this.fallbackCar);
+    this.chassis.add(this.fallbackCar);
+    this.vehicle.add(this.chassis);
   }
 
   private loadModel(): void {
@@ -233,9 +266,9 @@ export class AnimationService {
         });
         wrapper.add(gltf.scene);
         wrapper.position.y = 0.15;
-        this.vehicle.remove(this.fallbackCar);
+        this.chassis.remove(this.fallbackCar);
         this.disposeObject(this.fallbackCar);
-        this.vehicle.add(wrapper);
+        this.chassis.add(wrapper);
         this.render();
       },
       undefined,
@@ -246,12 +279,13 @@ export class AnimationService {
   }
 
   setMode(mode: 'overview' | 'ride', immediate = false): void {
-    if (mode === 'ride' && !this.modelRequested && !this.disposed) {
+    if (!this.modelRequested && !this.disposed) {
       this.modelRequested = true;
       this.loadModel();
     }
     const changed = this.mode !== mode;
     this.mode = mode;
+    this.roadSigns.visible = true;
     if (changed || immediate) {
       this.pointer.set(0, 0);
       if (immediate) {
@@ -311,20 +345,42 @@ export class AnimationService {
     // Fixed simulation steps make the path independent of monitor refresh rate.
     this.fixedAccumulator += dt;
     while (this.fixedAccumulator >= 1 / 120) {
-      this.progress = advanceProgress(this.progress, 1 / 120);
+      this.advanceVehicle(1 / 120);
       this.fixedAccumulator -= 1 / 120;
     }
-    this.positionVehicle();
+    this.positionVehicle(dt);
     this.positionCamera(dt);
     this.render();
     this.frame = requestAnimationFrame(this.animate);
   };
 
-  private positionVehicle(): void {
-    const point = this.curve.getPointAt(this.progress, new THREE.Vector3());
-    const tangent = this.curve.getTangentAt(this.progress, new THREE.Vector3());
-    this.vehicle.position.copy(point);
-    this.vehicle.lookAt(point.clone().add(tangent));
+  private advanceVehicle(dt: number): void {
+    const tangent = this.curve.getTangentAt(this.progress);
+    const ahead = this.curve.getTangentAt((this.progress + 5 / this.trackLength) % 1);
+    const turn = Math.atan2(tangent.z * ahead.x - tangent.x * ahead.z, tangent.x * ahead.x + tangent.z * ahead.z);
+    this.turnCurvature = turn / 5;
+    const desired = targetDrivingSpeed(this.turnCurvature, tangent.y,
+      this.mode === 'ride' ? signApproachSpeed(this.progress) : 1);
+    const previousSpeed = this.speed;
+    this.speed = approachDrivingSpeed(this.speed, desired, dt);
+    this.acceleration = (this.speed - previousSpeed) / dt;
+    this.progress = (this.progress + this.speed * dt / this.trackLength) % 1;
+  }
+
+  private positionVehicle(dt = 0): void {
+    const halfWheelbase = 1.6 / this.trackLength;
+    const front = this.curve.getPointAt((this.progress + halfWheelbase) % 1);
+    const rear = this.curve.getPointAt((this.progress - halfWheelbase + 1) % 1);
+    this.vehicle.position.copy(front).add(rear).multiplyScalar(.5);
+    this.pose.position.copy(this.vehicle.position);
+    this.pose.lookAt(front);
+    const steering = dt ? 1 - Math.exp(-dt * 16) : 1;
+    this.vehicle.quaternion.slerp(this.pose.quaternion, steering);
+    const suspension = dt ? 1 - Math.exp(-dt * 7) : 1;
+    const roll = THREE.MathUtils.clamp(-this.turnCurvature * this.speed * this.speed * .012, -.045, .045);
+    const pitch = THREE.MathUtils.clamp(-this.acceleration * .007, -.025, .025);
+    this.chassis.rotation.z = THREE.MathUtils.lerp(this.chassis.rotation.z, roll, suspension);
+    this.chassis.rotation.x = THREE.MathUtils.lerp(this.chassis.rotation.x, pitch, suspension);
   }
 
   private positionCamera(dt: number, immediate = false): void {
@@ -336,23 +392,27 @@ export class AnimationService {
       this.targetLook.set(portrait ? -10 : -12, portrait ? 68 : 55, 0);
     } else {
       const point = this.curve.getPointAt(this.progress, new THREE.Vector3());
-      const tangent = this.curve.getTangentAt(this.progress, new THREE.Vector3());
+      // Follow the actual path behind the car instead of cutting across tight corners.
       this.targetCamera
-        .copy(point)
-        .addScaledVector(tangent, -9)
-        .add(new THREE.Vector3(this.pointer.x * 2, 4 + this.pointer.y, 0));
+        .copy(this.curve.getPointAt((this.progress - 9 / this.trackLength + 1) % 1))
+        .add(new THREE.Vector3(this.pointer.x * 2, 4.2 + this.pointer.y, 0));
+      this.targetCamera.y = Math.max(this.targetCamera.y, point.y + 2.5);
       this.targetLook
-        .copy(this.curve.getPointAt((this.progress + 0.014) % 1))
+        .copy(this.curve.getPointAt((this.progress + (5 + this.speed * .35) / this.trackLength) % 1))
         .add(new THREE.Vector3(0, 1, 0));
     }
-    const amount = immediate ? 1 : 1 - Math.exp(-dt * 4);
+    const amount = immediate ? 1 : 1 - Math.exp(-dt * (this.mode === 'ride' ? 8 : 4));
     this.camera.position.lerp(this.targetCamera, amount);
     this.currentLook.lerp(this.targetLook, amount);
     this.camera.lookAt(this.currentLook);
   }
 
   private render(): void {
-    if (!this.disposed) this.renderer?.render(this.scene, this.camera);
+    if (!this.disposed) {
+      const signsChanged = orientRoadSigns(this.roadSigns, this.mode === 'overview', this.camera.position);
+      if (signsChanged && this.renderer) this.renderer.shadowMap.needsUpdate = true;
+      this.renderer?.render(this.scene, this.camera);
+    }
   }
 
   private disposeObject(root: THREE.Object3D): void {

@@ -1,5 +1,10 @@
 :root {
   color-scheme: light;
+  --neural: #436f72;
+  --sky: #ece8dd;
+  --horizon: #e6d5ba;
+  --ground: #b99063;
+  --atmosphere: linear-gradient(180deg, #f1eee6ed, #f1eee638 53%, transparent 70%, #e6d9c5bd);
   --paper: #f5f2e9;
   --surface: #ebe7dc;
   --ink: #302e27;
@@ -19,7 +24,8 @@ body {
 }
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
-  color: #302e27;
+  color: var(--ink);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -31,21 +37,45 @@ button {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #a4492f;
+  outline: 2px solid var(--accent);
   outline-offset: 5px;
 }
 ::selection {
   background: #d8b89b;
   color: #25231f;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --paper: #242721;
-    --surface: #2e322a;
-    --ink: #f0ece0;
-    --muted: #b7b8a9;
-    --line: #474b40;
-    --accent: #eda17e;
-  }
+html[data-theme='night'] {
+  color-scheme: dark;
+  --paper: #171f2b;
+  --surface: #222d3b;
+  --ink: #f0eee7;
+  --muted: #b8c2cd;
+  --line: #3e4b5b;
+  --accent: #f0b38f;
+  --neural: #8bcbd1;
+  --sky: #171f2b;
+  --horizon: #28394e;
+  --ground: #354354;
+  --atmosphere: linear-gradient(180deg, #171f2bf2, #171f2b38 58%, transparent 70%, #171f2bb8);
 }
+
+button, a, summary { touch-action: manipulation; }
+button, a { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease; }
+button:active:not(:disabled), a:active { opacity: 0.8; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.work-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--accent); font-size: 12px; text-underline-offset: 4px; }

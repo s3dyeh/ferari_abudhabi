@@ -1,3 +1,9 @@
+import { Seo } from './seo';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
+import { SocialLinks } from './social-links';
+import { ArrowIcon } from './arrow-icon';
+import { AmmanTheme } from './clock/amman-theme';
 import { Component, DestroyRef, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { Animation } from './animation/animation';
 import { AmmanClock } from './clock/amman-clock';
@@ -5,28 +11,36 @@ import { Portfolio } from './portfolio/portfolio';
 import { SunButton } from './sun/sun-button';
 
 @Component({
-  selector: 'app-root',
-  imports: [Animation, AmmanClock, Portfolio, SunButton],
+  selector: 'app-experience',
+  imports: [ SocialLinks, ArrowIcon, Animation, AmmanClock, Portfolio, SunButton],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
+  readonly theme = inject(AmmanTheme);
   @ViewChild('portfolioDialog') private dialog!: ElementRef<HTMLDialogElement>;
   @ViewChild(SunButton) private sun!: SunButton;
   readonly mode = signal<'overview' | 'ride'>('overview');
   readonly portfolioOpen = signal(false);
   readonly sceneStatus = signal<'loading' | 'ready' | 'fallback'>('loading');
   readonly reducedMotion = signal(false);
+  readonly animationReady = signal(false);
   readonly revealOrigin = signal('78% 32%');
 
   constructor() {
+    inject(Seo).setPage();
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.reducedMotion.set(preference.matches);
     const update = () => {
       this.reducedMotion.set(preference.matches);
     };
     preference.addEventListener('change', update);
-    inject(DestroyRef).onDestroy(() => preference.removeEventListener('change', update));
+    const startAnimation = window.setTimeout(() => this.animationReady.set(true), 3000);
+    inject(DestroyRef).onDestroy(() => {
+      window.clearTimeout(startAnimation);
+      preference.removeEventListener('change', update);
+    });
   }
 
   openPortfolio(): void {

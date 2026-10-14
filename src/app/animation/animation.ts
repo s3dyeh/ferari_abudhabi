@@ -21,6 +21,7 @@ export class Animation implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   readonly mode = input<'overview' | 'ride'>('overview');
   readonly paused = input(false);
+  readonly night = input(false);
   readonly reducedMotion = input(false);
   readonly statusChange = output<'loading' | 'ready' | 'fallback'>();
   private readonly scene = inject(AnimationService);
@@ -55,6 +56,7 @@ export class Animation implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       this.mode();
+      this.night();
       this.paused();
       this.reducedMotion();
       this.sync();
@@ -89,6 +91,7 @@ export class Animation implements AfterViewInit, OnDestroy {
   private sync(): void {
     if (!this.initialized) return;
     this.zone.runOutsideAngular(() => {
+      this.scene.setNight(this.night());
       this.scene.setMode(this.mode(), this.reducedMotion() || this.paused());
       this.scene.setPaused(this.paused() || document.hidden);
     });

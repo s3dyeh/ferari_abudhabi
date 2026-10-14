@@ -45,6 +45,14 @@ describe('Scene lifecycle', () => {
     vi.unstubAllGlobals();
   });
 
+  it('keeps road signs visible in both camera modes', () => {
+    service.setMode('overview', true);
+    const scene = renderState.render.mock.lastCall?.[0] as THREE.Scene;
+    expect(scene.getObjectByName('road-signs')?.visible).toBe(true);
+    service.setMode('ride', true);
+    expect(scene.getObjectByName('road-signs')?.visible).toBe(true);
+  });
+
   it('stops the frame loop while paused and restarts only once', () => {
     service.setPaused(false);
     service.setPaused(false);

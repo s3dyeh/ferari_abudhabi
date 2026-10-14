@@ -6,6 +6,10 @@ export interface Project {
   detail: string;
   technologies: readonly string[];
   links: readonly { label: string; url: string }[];
+  internalSystem?: boolean;
+  role?: string;
+  wordmark?: string;
+  capabilities?: readonly string[];
   image?: string;
   imageAlt?: string;
   tone: string;
@@ -13,10 +17,59 @@ export interface Project {
 
 export const PROJECTS: readonly Project[] = [
   {
+    name: 'Internal AI & Data Quality Platform',
+    wordmark: 'AI & Data Quality',
+    category: 'Enterprise AI & data quality',
+    role: 'Backend & AI integration',
+    internalSystem: true,
+    tone: 'charcoal',
+    summary: 'Integrated intelligence across data quality, surveys, and reporting.',
+    contribution: 'Implemented the backend and full AI integration for an internal platform, bringing data-quality checks, configurable surveys and rules, knowledge retrieval, and reporting monitoring into connected workflows.',
+    detail: 'Integrated a data-quality module covering anomaly detection, bias detection, duplication detection, and sentiment detection, alongside a survey and rule builder, an AI RAG system, and an AI reporting and monitoring system.',
+    capabilities: [
+      'Anomaly detection: flag unusual data patterns for review.',
+      'Bias detection: surface potential bias in data for investigation.',
+      'Duplication detection: identify duplicate records.',
+      'Sentiment detection: analyze sentiment in text responses.',
+      'Survey & rule builder: configure surveys and data-quality rules.',
+      'AI RAG system: retrieve relevant internal knowledge to support generated answers.',
+      'AI reporting & monitoring: integrate reporting and monitoring workflows.',
+    ],
+    technologies: ['Backend development', 'AI integration', 'Data quality', 'RAG', 'Survey & rule builder', 'Reporting & monitoring'],
+    links: [],
+  },
+  {
+    name: 'Jordan Census 2026',
+    wordmark: 'Jordan Census 2026',
+    category: 'Census systems',
+    role: 'Backend development',
+    internalSystem: true,
+    tone: 'olive',
+    summary: 'Backend engineering for internal census workflows.',
+    contribution: 'Worked on backend development for the Jordan Census 2026 internal system.',
+    detail: 'Contributed to the backend application layer supporting the census system. This portfolio entry describes my engineering contribution to an internal system.',
+    technologies: ['Backend development', 'Internal systems', 'Census workflows'],
+    links: [],
+  },
+  {
+    name: 'SSC / Sanad & MODEE Integrations',
+    wordmark: 'SSC Integrations',
+    category: 'Government system integrations',
+    role: 'Backend development & integration',
+    internalSystem: true,
+    tone: 'charcoal',
+    summary: 'Connected services and verifiable reports.',
+    contribution: 'Implemented backend integration work connecting SSC with Sanad, alongside QR report validation with MODEE.',
+    detail: 'Backend work across the SSC–Sanad integration and the MODEE QR report-validation workflow, connecting the participating systems and handling report-validation requests.',
+    capabilities: ['SSC–Sanad backend integration.', 'QR-based report validation with MODEE.'],
+    technologies: ['Backend integration', 'Sanad', 'QR report validation', 'MODEE'],
+    links: [],
+  },
+  {
     name: 'FarasJo',
     category: 'Equestrian platform',
     tone: 'olive',
-    summary: 'An entire equestrian world, connected.',
+    summary: 'An equestrian community. A complete bilingual platform.',
     contribution:
       'Designed, built, and deployed a bilingual equestrian platform end-to-end, from architecture and database design to production maintenance.',
     detail:
@@ -76,6 +129,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'EmploGene',
+    internalSystem: true,
     category: 'HR & workforce management',
     tone: 'sage',
     summary: 'Complex organizations. Connected workflows.',
@@ -84,7 +138,7 @@ export const PROJECTS: readonly Project[] = [
     detail:
       'An interconnected PostgreSQL data model brings employee, task, and organizational workflows together.',
     technologies: ['PostgreSQL', 'REST APIs', 'Authentication', 'Role-based access'],
-    links: [{ label: 'Visit EmploGene', url: 'https://emplgene.s3dyeh.com/' }],
+    links: [],
   },
 ];
 

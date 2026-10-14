@@ -27,7 +27,7 @@ The build also emits gzip and Brotli versions; configure the static host to serv
 - The page stays within the viewport. Only the portfolio content scrolls.
 - The Amman clock explicitly uses `Asia/Amman` through Intl, including weekday and date. It is independent of the visitor’s timezone.
 - Reduced-motion preferences remove the sun movement transition, camera transition, and portfolio reveal animation.
-- The portfolio follows system light/dark preferences. The scene retains its golden-hour art direction.
+- The interface and scene follow Asia/Amman time: day from 06:00 to 18:00, night otherwise.
 - Hidden tabs and the open portfolio pause the animation. The 3D renderer loads when the browser is idle, initializes in stages, and compiles shaders asynchronously.
 - The overview runs at up to 30 fps with cached scenery shadows. The detailed car model loads only after Take a ride is selected; a lightweight car is available immediately.
 - WebGL failure leaves the portfolio accessible; model-loading failure retains a lightweight fallback car.
@@ -71,3 +71,18 @@ npx agent-browser a11y --json
 ```
 
 Deployment is not configured or performed by this refactor.
+
+
+## Search and social sharing
+
+Production origin: `https://s3dyeh.com`. Both `/` and `/work/` are prerendered at build time. `/work/` contains the full profile, services, projects, certifications, and eight visible FAQ disclosures, accessible without JavaScript. The cinematic homepage links to it directly.
+
+`npm run build` validates the generated HTML, canonical URLs, Person/WebSite/ProfilePage JSON-LD, Open Graph metadata, social preview dimensions, sitemap, robots file, and absence of hourly pricing before compression. Run `npm run verify:seo` to check an existing build.
+
+Deploy the entire `dist/Animator/browser` directory. Configure the host to serve `/work/` from `/work/index.html`, redirect HTTP and www to `https://s3dyeh.com`, and return a real 404 for unknown URLs. Do not rewrite every request to the homepage. The static build does not need a Node server.
+
+After publishing, verify the domain in Google Search Console and Bing Webmaster Tools and submit `https://s3dyeh.com/sitemap.xml`. Verification requires the site owner's account or DNS access and is not performed by this code change. Check live URLs and social previews after deployment. Rankings, indexing, and viral reach are not guaranteed.
+
+Update metadata and schema in `src/app/seo.ts` and `src/index.html`. Update FAQs in `src/app/faq.data.ts`. Update `public/sitemap.xml` whenever public routes change. Social artwork is `public/social-preview.png` (1200 x 630). Keep preview/staging deployments out of indexing using hosting access controls or a staging-specific noindex response header; the production robots file intentionally permits crawling.
+
+The FAQ section is written for visitors. It does not claim Google FAQ rich-result eligibility. No invented reviews, ratings, or business addresses are included.

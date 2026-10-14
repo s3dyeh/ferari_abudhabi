@@ -1,29 +1,40 @@
 <header class="portfolio-header">
   <div class="portfolio-brand">Ahmad Sadieh<span>Full-Stack & AI Engineer</span></div>
+  @if (standalonePage()) {
+    <a class="close-button" href="/">Back to the experience <app-arrow-icon /></a>
+  } @else {
   <button type="button" class="close-button" autofocus (click)="dismissed.emit()">
-    Back to the sun <span aria-hidden="true">×</span>
+    Back to the {{ theme.night() ? 'moon' : 'sun' }} <span aria-hidden="true">×</span>
   </button>
+  }
 </header>
 <div class="portfolio-scroll" role="region" tabindex="0" aria-label="Portfolio content">
   <div class="portfolio-content">
     <section class="portfolio-intro">
       <p class="section-label">The work behind the details</p>
-      <h2 id="portfolio-title">Good systems don’t<br />happen by accident.</h2>
-      <p>
-        I’m Ahmad, a Computer Engineer building full-stack applications and practical AI
-        integrations. I investigate the hard problems, understand what’s already there, and make it
-        work better.
-      </p>
+      @if (standalonePage()) {
+        <h1 id="portfolio-title">Full-Stack &amp; AI Engineering</h1>
+      } @else {
+        <h2 id="portfolio-title">Good systems don’t<br />happen by accident.</h2>
+      }
+      <app-profile-overview />
       <div class="intro-footnote">Clear architecture. Careful execution. Real production work.</div>
+      <app-social-links />
     </section>
-    <section aria-labelledby="work-title">
+    <nav class="section-nav" aria-label="Portfolio sections">
+      <a [attr.href]="standalonePage() ? '/work/#selected-work' : '#selected-work'" (click)="goToSection($event, 'selected-work')">Work</a><a [attr.href]="standalonePage() ? '/work/#services' : '#services'" (click)="goToSection($event, 'services')">Services</a>
+      <a [attr.href]="standalonePage() ? '/work/#certifications' : '#certifications'" (click)="goToSection($event, 'certifications')">Certifications</a><a [attr.href]="standalonePage() ? '/work/#faq' : '#faq'" (click)="goToSection($event, 'faq')">FAQs</a>
+    </nav>
+    <app-ai-toolkit />
+    <app-intelligence-story />
+    <section id="selected-work" aria-labelledby="work-title">
       <div class="section-heading">
-        <h3 id="work-title">Selected work</h3>
+        <h2 id="work-title">Selected work</h2>
         <span>Built, connected, delivered.</span>
       </div>
       <div class="projects">
         @for (project of projects; track project.name) {
-          <article class="project" [class]="'project ' + project.tone">
+          <article class="project" [class]="'project ' + project.tone" [attr.data-internal-system]="project.internalSystem ? 'true' : null">
             @if (project.image) {
               <div class="project-image">
                 <img
@@ -37,15 +48,24 @@
               </div>
             } @else {
               <div class="project-wordmark" aria-hidden="true">
-                <span>{{ project.name }}</span
+                <span>{{ project.wordmark || project.name }}</span
                 ><span class="wordmark-category">{{ project.category }}</span>
               </div>
             }
             <div class="project-body">
-              <p class="project-category">{{ project.category }}</p>
-              <h4>{{ project.name }}</h4>
+              <div class="project-meta">
+                <p class="project-category">{{ project.category }}</p>
+                @if (project.internalSystem) { <span class="internal-badge">Internal system</span> }
+              </div>
+              <h3>{{ project.name }}</h3>
+              @if (project.role) { <p class="project-role">{{ project.role }}</p> }
               <p class="project-summary">{{ project.summary }}</p>
               <p class="contribution">{{ project.contribution }}</p>
+              @if (project.capabilities) {
+                <ul class="project-capabilities" aria-label="Technical scope">
+                  @for (capability of project.capabilities; track capability) { <li>{{ capability }}</li> }
+                </ul>
+              }
               <details>
                 <summary>Details that matter <span aria-hidden="true">+</span></summary>
                 <p>{{ project.detail }}</p>
@@ -55,33 +75,27 @@
                   <li>{{ technology }}</li>
                 }
               </ul>
+              @if (!project.internalSystem && project.links.length) {
               <div class="project-links">
                 @for (link of project.links; track link.url) {
                   <a [href]="link.url" target="_blank" rel="noopener noreferrer"
-                    >{{ link.label }} <span aria-hidden="true">↗</span
-                    ><span class="sr-only"> (opens in a new tab)</span></a
+                    >{{ link.label }} <app-arrow-icon /><span class="sr-only"> (opens in a new tab)</span></a
                   >
                 }
               </div>
+              }
             </div>
           </article>
         }
       </div>
     </section>
-    <section class="expertise" aria-labelledby="expertise-title">
-      <div class="section-heading"><h3 id="expertise-title">Where I can help</h3></div>
-      <div class="expertise-grid">
-        @for (item of expertise; track item.title) {
-          <article>
-            <h4>{{ item.title }}</h4>
-            <p>{{ item.description }}</p>
-          </article>
-        }
-      </div>
-    </section>
+    <app-engineering-signature />
+    <app-professional-details />
+    <app-certifications />
+    <app-faq />
     <div class="portfolio-footer">
       <p>For the details you notice.<br /><strong>And the ones your users never should.</strong></p>
-      <span>Ahmad Sadieh</span>
+      <app-social-links />
     </div>
   </div>
 </div>
