@@ -14,6 +14,12 @@
 }
 * {
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable]:not([contenteditable="false"]), [contenteditable]:not([contenteditable="false"]) * {
+  -webkit-user-select: text;
+  user-select: text;
 }
 html,
 body {
@@ -39,10 +45,6 @@ button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 5px;
-}
-::selection {
-  background: #d8b89b;
-  color: #25231f;
 }
 html[data-theme='night'] {
   color-scheme: dark;
