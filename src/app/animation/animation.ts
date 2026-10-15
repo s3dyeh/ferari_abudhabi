@@ -29,7 +29,11 @@ export class Animation implements AfterViewInit, OnDestroy {
   private initialized = false;
   private destroyed = false;
   private observer?: ResizeObserver;
-  private readonly visibility = () => this.sync();
+  private activePointerId?: number;
+  private readonly visibility = () => {
+    if (document.hidden) this.pointerUp();
+    this.sync();
+  };
   private readonly lost = (event: Event) => {
     event.preventDefault();
     this.scene.setPaused(true);
@@ -41,8 +45,10 @@ export class Animation implements AfterViewInit, OnDestroy {
     this.statusChange.emit('ready');
   };
   private readonly pointerDown = (event: PointerEvent) => {
-    if (!this.paused()) {
+    if (!this.paused() && event.isPrimary && event.button === 0) {
       this.canvasRef.nativeElement.setPointerCapture(event.pointerId);
+      this.activePointerId = event.pointerId;
+      this.scene.setBraking(true);
       this.scene.setPointer(event.clientX, event.clientY);
     }
   };
@@ -51,7 +57,12 @@ export class Animation implements AfterViewInit, OnDestroy {
       this.scene.setPointer(event.clientX, event.clientY);
     }
   };
-  private readonly pointerUp = () => this.scene.resetPointer();
+  private readonly pointerUp = (event?: Event) => {
+    if (event && 'pointerId' in event && event.pointerId !== this.activePointerId) return;
+    this.activePointerId = undefined;
+    this.scene.setBraking(false);
+    this.scene.resetPointer();
+  };
 
   constructor() {
     effect(() => {
@@ -80,6 +91,7 @@ export class Animation implements AfterViewInit, OnDestroy {
       this.statusChange.emit('fallback');
     }
     document.addEventListener('visibilitychange', this.visibility);
+    window.addEventListener('blur', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.lost);
     canvas.addEventListener('webglcontextrestored', this.restored);
     canvas.addEventListener('pointerdown', this.pointerDown);
@@ -100,6 +112,7 @@ export class Animation implements AfterViewInit, OnDestroy {
     this.destroyed = true;
     this.observer?.disconnect();
     document.removeEventListener('visibilitychange', this.visibility);
+    window.removeEventListener('blur', this.pointerUp);
     const canvas = this.canvasRef.nativeElement;
     canvas.removeEventListener('webglcontextlost', this.lost);
     canvas.removeEventListener('webglcontextrestored', this.restored);

@@ -7,9 +7,23 @@ describe('Driving dynamics', () => {
     expect(targetDrivingSpeed(.001, .4)).toBeLessThan(targetDrivingSpeed(.001, -.4));
   });
   it('limits acceleration and braking instead of snapping to a new speed', () => {
-    expect(approachDrivingSpeed(0, 12, .1)).toBeCloseTo(.22);
-    expect(approachDrivingSpeed(12, 3, .1)).toBeCloseTo(11.55);
+    expect(approachDrivingSpeed(0, 12, .1)).toBeCloseTo(.6);
+    expect(approachDrivingSpeed(12, 3, .1)).toBeCloseTo(10.8);
     expect(approachDrivingSpeed(10, 10.01, .1)).toBe(10.01);
+  });
+  it('cruises faster and smoothly brakes while held, then accelerates on release', () => {
+    const cruise = targetDrivingSpeed(0, 0);
+    expect(cruise).toBe(22);
+    const held = targetDrivingSpeed(0, 0, 1, true);
+    let speed = cruise;
+    for (let i = 0; i < 240; i++) speed = approachDrivingSpeed(speed, held, 1 / 120);
+    expect(speed).toBeCloseTo(held);
+    expect(speed).toBeGreaterThan(0);
+    const released = approachDrivingSpeed(speed, cruise, 1 / 120);
+    expect(released).toBeGreaterThan(speed);
+    expect(released).toBeLessThan(cruise);
+    for (let i = 0; i < 480; i++) speed = approachDrivingSpeed(speed, cruise, 1 / 120);
+    expect(speed).toBe(cruise);
   });
   it('accelerates consistently at different update rates', () => {
     const simulate = (rate: number) => {

@@ -17,6 +17,7 @@ export class AnimationService {
   private chassis = new THREE.Group();
   private speed = 0;
   private acceleration = 0;
+  private braking = false;
   private turnCurvature = 0;
   private trackLength = this.curve.getLength();
   private pose = new THREE.Object3D();
@@ -296,6 +297,7 @@ export class AnimationService {
   }
 
   setPaused(paused: boolean): void {
+    if (paused) this.setBraking(false);
     if (this.disposed || this.paused === paused) return;
     this.paused = paused;
     if (paused) {
@@ -318,6 +320,10 @@ export class AnimationService {
   }
   resetPointer(): void {
     this.pointer.set(0, 0);
+  }
+
+  setBraking(braking: boolean): void {
+    this.braking = braking;
   }
 
   resize(render = true): void {
@@ -360,7 +366,7 @@ export class AnimationService {
     const turn = Math.atan2(tangent.z * ahead.x - tangent.x * ahead.z, tangent.x * ahead.x + tangent.z * ahead.z);
     this.turnCurvature = turn / 5;
     const desired = targetDrivingSpeed(this.turnCurvature, tangent.y,
-      this.mode === 'ride' ? signApproachSpeed(this.progress) : 1);
+      this.mode === 'ride' ? signApproachSpeed(this.progress) : 1, this.braking);
     const previousSpeed = this.speed;
     this.speed = approachDrivingSpeed(this.speed, desired, dt);
     this.acceleration = (this.speed - previousSpeed) / dt;
