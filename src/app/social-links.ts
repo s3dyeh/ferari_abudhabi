@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { faLinkedinIn, faGithub, faInstagram, faFacebookF } from '@fortawesome/free-brands-svg-icons';
+import { PROFILE_LINKS } from './site-content';
 
 @Component({
   selector: 'app-social-links',
   template: `<nav aria-label="Social profiles and email">
     @for (link of links; track link.label) {
-      <a [href]="link.url" target="_blank" rel="noopener noreferrer"
+      <a [href]="link.url" target="_blank" rel="me noopener noreferrer"
         [attr.aria-label]="link.label + ' (opens in a new tab)'" [attr.title]="link.label + ' / s3dyeh'">
         <svg [attr.viewBox]="'0 0 ' + link.icon.icon[0] + ' ' + link.icon.icon[1]" aria-hidden="true" focusable="false">
           <path [attr.d]="link.icon.icon[4]" />
@@ -27,10 +28,7 @@ import { faLinkedinIn, faGithub, faInstagram, faFacebookF } from '@fortawesome/f
     @media (prefers-reduced-motion: reduce) { a { transition: none; } }`,
 })
 export class SocialLinks {
-  readonly links = [
-    { label: 'LinkedIn', url: 'https://www.linkedin.com/in/s3dyeh/', icon: faLinkedinIn },
-    { label: 'GitHub', url: 'https://github.com/s3dyeh', icon: faGithub },
-    { label: 'Instagram', url: 'https://www.instagram.com/s3dyeh/', icon: faInstagram },
-    { label: 'Facebook', url: 'https://www.facebook.com/s3dyeh', icon: faFacebookF },
-  ];
+  readonly links = PROFILE_LINKS.map((link, index) => ({
+    ...link, icon: [faLinkedinIn, faGithub, faInstagram, faFacebookF][index],
+  }));
 }

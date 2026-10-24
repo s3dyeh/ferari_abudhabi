@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://s3dyeh.com/</loc></url>
-  <url><loc>https://s3dyeh.com/work/</loc></url>
+  <url><loc>https://www.s3dyeh.com/</loc></url>
+  <url><loc>https://www.s3dyeh.com/about/</loc></url>
+  <url><loc>https://www.s3dyeh.com/work/</loc></url>
+  <url><loc>https://www.s3dyeh.com/expertise/</loc></url>
+  <url><loc>https://www.s3dyeh.com/expertise/angular-nodejs/</loc></url>
+  <url><loc>https://www.s3dyeh.com/expertise/ai-rag-agents/</loc></url>
+  <url><loc>https://www.s3dyeh.com/expertise/database-api-performance/</loc></url>
 </urlset>

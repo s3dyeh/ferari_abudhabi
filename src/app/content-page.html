@@ -1,0 +1,61 @@
+<a class="skip-link" [href]="page.path + '#main-content'">Skip to content</a>
+<header class="page-header">
+  <a class="brand" href="/">Ahmad Sadieh <span>s3dyeh / Software &amp; AI Engineer</span></a>
+  <nav aria-label="Main navigation">
+    <a href="/about/" [attr.aria-current]="page.path === '/about/' ? 'page' : null">About</a>
+    <a href="/expertise/" [attr.aria-current]="page.path === '/expertise/' ? 'page' : null">Expertise</a>
+    <a href="/work/">Work</a>
+  </nav>
+</header>
+<main id="main-content" tabindex="-1">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a><span aria-hidden="true">/</span>
+    @if (isSpecialty) { <a href="/expertise/">Expertise</a><span aria-hidden="true">/</span> }
+    <span aria-current="page">{{ page.label }}</span>
+  </nav>
+  <div class="page-intro">
+    <p class="eyebrow">{{ page.eyebrow }}</p>
+    <h1>{{ page.heading }}</h1>
+    <p class="lead">{{ page.intro }}</p>
+  </div>
+  <nav class="contents" aria-label="On this page">
+    <span>On this page</span>
+    @for (section of page.sections; track section.id) {
+      <a [href]="page.path + '#' + section.id">{{ section.heading }}</a>
+    }
+  </nav>
+  <div class="sections">
+    @for (section of page.sections; track section.id) {
+      <section [id]="section.id" [attr.aria-labelledby]="section.id + '-title'">
+        <h2 [id]="section.id + '-title'">{{ section.heading }}</h2>
+        <div class="section-body">
+          @for (paragraph of section.paragraphs; track paragraph) { <p>{{ paragraph }}</p> }
+          @if (section.points) {
+            <ul>@for (point of section.points; track point) { <li>{{ point }}</li> }</ul>
+          }
+          @if (section.links) {
+            <ul class="reading-links">
+              @for (link of section.links; track link.href) {
+                <li><a [href]="link.href">{{ link.label }} <span aria-hidden="true">↗</span></a></li>
+              }
+            </ul>
+          }
+        </div>
+      </section>
+    }
+  </div>
+  <aside class="related" aria-labelledby="related-title">
+    <h2 id="related-title">Explore the engineering</h2>
+    <ul>
+      @for (topic of expertise; track topic.path) {
+        @if (topic.path !== page.path) { <li><a [href]="topic.path">{{ topic.label }}</a></li> }
+      }
+      <li><a href="/work/">Projects &amp; certifications</a></li>
+    </ul>
+  </aside>
+  <footer>
+    <div><p>Have a system to build, fix or connect?</p><a href="mailto:s3dyeh00@gmail.com">Let’s discuss your project ↗</a></div>
+    <app-social-links />
+    <p class="signature">Ahmad Sadieh · s3dyeh</p>
+  </footer>
+</main>

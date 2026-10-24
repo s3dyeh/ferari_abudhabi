@@ -6,7 +6,7 @@ import { ArrowIcon } from '../arrow-icon';
   template: `<div class="profile-heading">
     <p class="title">Full-Stack &amp; AI Engineer <span>| LLM, RAG &amp; AI agents | Angular &amp; Node.js</span></p>
   </div>
-  <p>I’m a Full-Stack &amp; AI Engineer specializing in building, improving, and troubleshooting production-grade web applications and enterprise systems.</p>
+  <p>I’m Ahmad Sadieh, also known as s3dyeh, a software and Full-Stack &amp; AI Engineer specializing in building, improving, and troubleshooting production-grade web applications and enterprise systems.</p>
   <p>My core stack includes Angular, Node.js, TypeScript, NestJS/Express, Oracle, PostgreSQL, REST APIs, Docker, and Google Cloud. I also build and integrate AI/LLM capabilities into existing products, including RAG systems, AI agents, intelligent workflows, and enterprise AI integrations.</p>`,
   styles: `:host { display: block; margin-top: 30px; }
     .profile-heading { display: flex; align-items: start; justify-content: space-between; gap: 24px; }

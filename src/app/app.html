@@ -27,21 +27,25 @@
     <app-amman-clock ngSkipHydration />
   </header>
   <section class="introduction" aria-labelledby="intro-title" [attr.inert]="mode() === 'ride' ? '' : null">
-    <p class="eyebrow">Ahmad Sadieh / Engineer. Builder. Problem solver.</p>
+    <p class="eyebrow">s3dyeh / Full-Stack &amp; AI Engineer</p>
     <h1 id="intro-title">
-      I find the<br />
-      <em>connection</em><br />
-      others miss.
+      Ahmad Sadieh.<br />
+      <em>Engineer.</em><br />
+      Problem solver.
     </h1>
     <p class="intro-copy">
-      Between the interface and the database. Between your knowledge and AI.
-      I build, investigate, and connect the systems that make ideas work.
+      I’m Ahmad Sadieh, also known as s3dyeh. I build software with Angular,
+      Node.js and practical AI, connecting interfaces, databases and knowledge.
     </p>
     <p class="specialties">
       AI agents <span>/</span> RAG <span>/</span> Full-stack engineering
     </p>
     <app-social-links />
-    <a class="work-link" href="/work/">Services, work &amp; FAQs <app-arrow-icon /></a>
+    <nav class="intro-links" aria-label="Explore the portfolio">
+      <a class="work-link" href="/about/">Who is s3dyeh?</a>
+      <a class="work-link" href="/expertise/">Expertise</a>
+      <a class="work-link" href="/work/">Work &amp; FAQs <app-arrow-icon /></a>
+    </nav>
   </section>
   <app-sun-button [riding]="mode() === 'ride'" (activated)="openPortfolio()" />
   <footer class="scene-footer">

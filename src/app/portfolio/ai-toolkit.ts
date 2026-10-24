@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { AI_TOOLS } from '../ai-tools';
 @Component({
   selector: 'app-ai-toolkit',
-  template: `<section aria-labelledby="ai-toolkit-title">
+  template: `<section id="ai-toolkit" aria-labelledby="ai-toolkit-title">
     <p class="eyebrow">AI development / From knowledge to useful software</p>
     <h2 id="ai-toolkit-title">Build it. Ground it.<br /><em>Evaluate it.</em></h2>
     <p class="intro">AI development brings together APIs, retrieval, model orchestration, and evaluation. The goal: useful answers and workflows connected to the systems people already use.</p>

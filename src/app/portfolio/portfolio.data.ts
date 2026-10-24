@@ -1,4 +1,5 @@
 export interface Project {
+  id: string;
   name: string;
   category: string;
   summary: string;
@@ -18,6 +19,7 @@ export interface Project {
 export const PROJECTS: readonly Project[] = [
   {
     name: 'Internal AI & Data Quality Platform',
+    id: 'ai-data-quality',
     wordmark: 'AI & Data Quality',
     category: 'Enterprise AI & data quality',
     role: 'Backend & AI integration',
@@ -40,6 +42,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'Jordan Census 2026',
+    id: 'jordan-census',
     wordmark: 'Jordan Census 2026',
     category: 'Census systems',
     role: 'Backend development',
@@ -53,6 +56,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'SSC / Sanad & MODEE Integrations',
+    id: 'ssc-integrations',
     wordmark: 'SSC Integrations',
     category: 'Government system integrations',
     role: 'Backend development & integration',
@@ -67,6 +71,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'FarasJo',
+    id: 'farasjo',
     category: 'Equestrian platform',
     tone: 'olive',
     summary: 'An equestrian community. A complete bilingual platform.',
@@ -81,6 +86,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'Veasyo',
+    id: 'veasyo',
     category: 'Restaurant SaaS',
     tone: 'terracotta',
     summary: 'From a table request to a connected operation.',
@@ -95,6 +101,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'Hydrogen',
+    id: 'hydrogen',
     category: 'Fitness & hospitality',
     tone: 'charcoal',
     summary: 'One brand. Training, recovery, and hospitality.',
@@ -114,6 +121,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'Fluentia Academy',
+    id: 'fluentia',
     category: 'Online learning',
     tone: 'blue',
     summary: 'A smoother path to digital education.',
@@ -129,6 +137,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     name: 'EmploGene',
+    id: 'emplogene',
     internalSystem: true,
     category: 'HR & workforce management',
     tone: 'sage',

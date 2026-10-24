@@ -1,5 +1,5 @@
 <header class="portfolio-header">
-  <div class="portfolio-brand">Ahmad Sadieh<span>Full-Stack & AI Engineer</span></div>
+  <div class="portfolio-brand">Ahmad Sadieh · s3dyeh<span>Full-Stack & AI Engineer</span></div>
   @if (standalonePage()) {
     <a class="close-button" href="/">Back to the experience <app-arrow-icon /></a>
   } @else {
@@ -10,10 +10,13 @@
 </header>
 <div class="portfolio-scroll" role="region" tabindex="0" aria-label="Portfolio content">
   <div class="portfolio-content">
+    @if (standalonePage()) {
+      <nav class="section-nav" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true"> / </span><span aria-current="page">Work</span></nav>
+    }
     <section class="portfolio-intro">
       <p class="section-label">The work behind the details</p>
       @if (standalonePage()) {
-        <h1 id="portfolio-title">Full-Stack &amp; AI Engineering</h1>
+        <h1 id="portfolio-title">Ahmad Sadieh’s software &amp; AI work.</h1>
       } @else {
         <h2 id="portfolio-title">Good systems don’t<br />happen by accident.</h2>
       }
@@ -22,6 +25,7 @@
       <app-social-links />
     </section>
     <nav class="section-nav" aria-label="Portfolio sections">
+      <a href="/about/">About s3dyeh</a><a href="/expertise/">Expertise</a>
       <a [attr.href]="standalonePage() ? '/work/#selected-work' : '#selected-work'" (click)="goToSection($event, 'selected-work')">Work</a><a [attr.href]="standalonePage() ? '/work/#services' : '#services'" (click)="goToSection($event, 'services')">Services</a>
       <a [attr.href]="standalonePage() ? '/work/#certifications' : '#certifications'" (click)="goToSection($event, 'certifications')">Certifications</a><a [attr.href]="standalonePage() ? '/work/#faq' : '#faq'" (click)="goToSection($event, 'faq')">FAQs</a>
     </nav>
@@ -34,7 +38,7 @@
       </div>
       <div class="projects">
         @for (project of projects; track project.name) {
-          <article class="project" [class]="'project ' + project.tone" [attr.data-internal-system]="project.internalSystem ? 'true' : null">
+          <article class="project" [id]="project.id" [class]="'project ' + project.tone" [attr.data-internal-system]="project.internalSystem ? 'true' : null">
             @if (project.image) {
               <div class="project-image">
                 <img
